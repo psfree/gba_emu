@@ -1,0 +1,5 @@
+.DS_Store
+gba.o
+alu.o
+loguru.o
+proj2.x
