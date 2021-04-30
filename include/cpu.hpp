@@ -3,11 +3,49 @@
 #include "loguru.hpp"
 #include "alu.hpp"
 
+class MMU {
+	//ram
+	uint8_t bios[0x4000];
+	uint8_t wram0[0x40000];
+	uint8_t wram1[0x8000];
+	uint8_t io[0x3ff];
+	//vram
+	uint8_t pram[0x400];
+	uint8_t vram[0x18000];
+	uint8_t obj[0x400];
+	uint32_t memfault(){
+		return -1;
+	}
+	public:
+	uint32_t getWord(uint32_t addr){
+		if(addr<0x4000){
+			return bios[addr];
+		}
+		if(addr>0x02000000&&addr<0x02040000){
+			return wram0[addr&0x7ffff];
+		}
+		if(addr>0x03000000&&addr<0x03008000){
+			return wram1[addr&0x7fff];
+		}
+		return memfault();
+	}
+	void setWord(uint32_t addr, uint32_t val){
+		bios[addr] = val;
+		bios[addr+1] = val >>8;
+		bios[addr+2] = val >>16;
+		bios[addr+3] = val >> 24;
+	}
+	
+	//gamepak
+};
+
 class CPU{
 private:
 	uint8_t iwait=0;
 	uint8_t swait=0;
 	uint8_t nwait=0;
+	
+	uint8_t BIGEND=0;
 	
 public:
 	unsigned int R[37] = {0};	

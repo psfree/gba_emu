@@ -301,17 +301,11 @@ void CPU::execute(unsigned int op){
 		if(accumulate) iwait++;
 		
 	}
-	//probably last in order
-	else if((rem&0xc000000)==0x0) {
-		//Data processing
-		dataProcessing(rem);
-	}
-	
 	else if((rem&0xC000000)==0x4000000){
 		//LDR
 		bool imm = ((rem>>25)&1)==0;
 		bool post = ((rem>>24)&1)==0;
-		bool up = ((rem>>21)&1)==1;
+		bool down = ((rem>>21)&1)==0;
 		bool byte = ((rem>>22)&1)==1;
 		bool writeback = ((rem>>21)&1)==1;
 		bool store = ((rem>>20)&1)==0;
@@ -324,8 +318,35 @@ void CPU::execute(unsigned int op){
 			value = off;
 		}
 		else {
-		
+			value = handleshift(off);
 		}
+		if(down){
+			value=-value;
+		}
+		//TODO: post indexed write back mode priveleged
+		uint32_t ld_addr =0;
+		if(post){
+			ld_addr=R[Rn];
+			R[Rn]+=value;
+			if(writeback){
+				//TODO: post indexed write back mode priveleged edgecase
+			}
+		}
+		else {
+			R[Rn]+=value;
+			ld_addr=R[Rn]+value;
+			if(writeback) R[Rn]=ld_addr;
+		}
+		
+		if(byte){
+		}
+		else{
+			//TODO: word alignment 
+			MMU m;
+			m.setWord(ld_addr, 0xffffffff);
+			R[Rd] = m.getWord(ld_addr);
+		}
+		
 	}
 	else if((rem&0xE400F90)==0x90){
 		//LDRH reg
@@ -351,6 +372,11 @@ void CPU::execute(unsigned int op){
 	else if((rem&0xF000010)==0xE000010){
 		//MRC
 	}
+	//probably last in order
+	else if((rem&0xc000000)==0x0) {
+		//Data processing
+		dataProcessing(rem);
+	}
 	else {
 		//trap undefined, may need explicit check for op
 		trap();
@@ -366,20 +392,6 @@ void CPU::trap(){
 	*x++;
 }
 
-class MMU {
-	//ram
-	uint8_t bios[0x4000];
-	uint8_t wram0[0x40000];
-	uint8_t wram1[0x8000];
-	uint8_t io[0x3ff];
-	
-	//vram
-	uint8_t pram[0x400];
-	uint8_t vram[0x18000];
-	uint8_t obj[0x400];
-	
-	//gamepak
-};
 
 int main(int argc, char* argv[]){
 	loguru::init(argc, argv);
@@ -416,5 +428,10 @@ int main(int argc, char* argv[]){
 	cpu.R[3]=-9;
 	cpu.R[16]=0x40000000;
 	cpu.executeThumb(0x1f48);
+	cpu.R[1]=0x0;
+	cpu.R[16]=0x40000000;
+	cpu.execute(0xE5910000);
+	
+	
 	return 0;
 }
