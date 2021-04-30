@@ -1,6 +1,35 @@
-#include <cpu.hpp>
-void executeThumb(uint16_t op){
-	if((op>>13)==0) {
+#include "cpu.hpp"
+#include "alu.hpp"
+
+using namespace ALU;
+void CPU::executeThumb(uint16_t op){
+	if((op>>11)==3){
+		//ADD - validated
+		bool imm = ((op&0x400)>>10)==1;
+		bool sub = ((op>>9)&1)==1;
+		uint8_t Rn_off = ((op&0x1c0)>>6);
+		uint8_t Rs = ((op&0x38)>>3);
+		uint8_t Rd = ((op&7));
+		uint32_t rem=0;
+		
+		if(sub){
+			rem=0x500000;
+		}
+		else {
+			rem =0x900000;
+		}
+		rem|=Rs<<16;
+		rem|=Rd<<12;
+		if(!imm){
+			rem|=Rn_off;
+		}
+		else{
+			rem|=0x2000000;
+			rem|=Rn_off;
+		}
+		dataProcessing(rem);
+	}
+	else if((op>>13)==0) {
 		//Msr
 		
 		uint8_t subop = (op&0x1800)>>11;
@@ -9,24 +38,21 @@ void executeThumb(uint16_t op){
 		uint8_t Rd = (op&7);
 		if(subop==0){
 			//lsl
-			R[Rd] = shifter(R[Rm],off5,0b00);
+			R[Rd] = shifter(R[Rs],off5,0b00);
 			
 		}
 		else if(subop==1){
 			//lsr
-			R[Rd] = shifter(R[Rm],off5,0b01);
+			R[Rd] = shifter(R[Rs],off5,0b01);
 		}
 		else if(subop==2){
 			//asr
-			R[Rd] = shifter(R[Rm],off5,0b10);
+			R[Rd] = shifter(R[Rs],off5,0b10);
 		}
 		if(R[Rd]==0) setZ();
 		if(R[Rd]>>31==1) setN();
 		if(shiftCarry()==1) setC();
-	
-	}
-	else if((op>>11)==3){
-		//add
+		//todo:wait
 	}
 	else if((op>>13)==1){
 		//move/cmp imm

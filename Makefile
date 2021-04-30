@@ -1,13 +1,21 @@
-proj2: gba.o loguru.o alu.o
-	g++ -g -std=c++11 -o proj2.x gba.o loguru.o alu.o
+IDIR = ./include
+CC=g++
+CFLAGS=-g -std=c++11 -I$(IDIR)
+ODIR=obj
 
-alu.o:
-	g++ -g -std=c++11 -c alu.cpp
-gba.o:
-	g++ -g -std=c++11 -c gba.cpp
-    
-loguru.o:
-	g++ -std=c++11 -c loguru.cpp
+_DEPS = alu.hpp loguru.hpp cpu.hpp
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+_OBJ = alu.o loguru.o cpu.o thumb.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+$(ODIR)/%.o: %.cpp $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+	
+gba: $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
 
 clean:
-	rm *.o proj2.x
+	rm -f $(ODIR)/*.o

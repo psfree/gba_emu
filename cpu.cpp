@@ -1,4 +1,4 @@
-#include "cpu.hpp"
+#include "./include/cpu.hpp"
 using namespace std;
 using namespace ALU;
 //S
@@ -77,7 +77,7 @@ void CPU::wait(int s, int n, int i){
 
 
 
-int CPU::multCycles(int op2){
+uint32_t CPU::multCycles(int op2){
 		int m=4;
 		if((op2&0xffffff00)==0xffffff00 ||(op2&0xffffff00)==0x0) m=1;
 		if((op2&0xffff0000)==0xffff0000 ||(op2&0xffff0000)==0x0) m=2;
@@ -85,11 +85,30 @@ int CPU::multCycles(int op2){
 		return m;
 }
 
+
+uint32_t CPU::handleshift(uint32_t operand2){
+	uint32_t value=0;
+	uint32_t shift = (operand2&0xff0)>>4;
+	uint32_t Rm = operand2&0xf;
+	
+	uint32_t shiftType=(shift>>1)&3;
+	uint32_t shiftAmount=0;
+	if((shift&1)==1){
+		//shift from register
+		uint32_t Rs = (shift&0xf0)>>4;
+		shiftAmount = R[Rs]&0xff;
+		value = shifter(R[Rm], shiftAmount,shiftType);
+		iwait++;
+	}
+	else{
+		shiftAmount = shift>>3;
+		value = shifter(R[Rm], shiftAmount,shiftType);
+	}
+	return value;
+} 
+
 void CPU::dataProcessing(int rem) {
 		//TODO: MRs, R15 handling, other special cases
-		int iwait=0;
-		int swait=1;
-		int nwait=0;
 		bool imm = (rem>>25)==1;
 		unsigned int opcode = (rem >>21)&0xf;
 		bool setcond = ((rem>>20)&1)==1;
@@ -108,22 +127,7 @@ void CPU::dataProcessing(int rem) {
 			value = shifter(operand2&0xff,(operand2>>8)*2, 0b11 );
 		}
 		else {
-			uint32_t shift = (operand2&0xff0)>>4;
-			uint32_t Rm = operand2&0xf;
-			
-			uint32_t shiftType=(shift>>1)&3;
-			uint32_t shiftAmount=0;
-			if((shift&1)==1){
-				//shift from register
-				uint32_t Rs = (shift&0xf0)>>4;
-				shiftAmount = R[Rs]&0xff;
-				value = shifter(R[Rm], shiftAmount,shiftType);
-				iwait++;
-			}
-			else{
-				shiftAmount = shift>>3;
-				value = shifter(R[Rm], shiftAmount,shiftType);
-			}
+			value = handleshift(operand2);
 		}
 		//TODO: 4.5.4, r15 handling, TsT
 		int tst = 0;
@@ -210,10 +214,10 @@ void CPU::dataProcessing(int rem) {
 				
 			}
 		}
-		wait(swait, nwait,iwait);
 }
 
 void CPU::execute(unsigned int op){
+	iwait=swait=nwait=0;
 	unsigned int cond = op>>27;
 	if(!condition(cond)) return;
 	int rem = op&0x0fffffff;
@@ -225,7 +229,8 @@ void CPU::execute(unsigned int op){
 			//TODO: thumb mode;
 		}
 		R[15]=R[Rn];
-		wait(2,1,0);
+		swait=2;
+		nwait=1;
 	}
 	else if((rem&0x0f000000)==0x0a000000){
 		//BL
@@ -237,7 +242,8 @@ void CPU::execute(unsigned int op){
 			R[14]=R[15];
 		}
 		R[15]+=off;
-		wait(2,1,0);
+		swait=2;
+		nwait=1;
 	}
 	else if((rem&0xFC000F0)==0x90){
 		//MUL
@@ -255,7 +261,8 @@ void CPU::execute(unsigned int op){
 			if(R[Rd]>>31) setN(); else clearN();
 			if(R[Rd]==0) setZ(); else clearZ();
 		}
-		wait(1, 0,multCycles(R[Rs])+2);
+		swait=1;
+		iwait=multCycles(R[Rs])+2;
 	}
 	else if((rem&0xF8000F0)==0x800090){
 		//MULL
@@ -289,16 +296,15 @@ void CPU::execute(unsigned int op){
 			if(R[Rd_hi]>>31) setN(); else clearN();
 			if(R[Rd_hi]==0&&R[Rd_lo]==0) setZ(); else clearZ();
 		}
-		int m = multCycles(R[Rs]);
-		if(accumulate) wait(1, 0,m+2);
-		else wait(1, 0 ,m+1);
+		swait = 1;
+		iwait = multCycles(R[Rs])+1;
+		if(accumulate) iwait++;
 		
 	}
 	//probably last in order
 	else if((rem&0xc000000)==0x0) {
 		//Data processing
 		dataProcessing(rem);
-		
 	}
 	
 	else if((rem&0xC000000)==0x4000000){
@@ -312,6 +318,14 @@ void CPU::execute(unsigned int op){
 		uint8_t Rn = ((rem>>16)&0xf);
 		uint8_t Rd = ((rem>>12)&0xf);
 		uint32_t off = (rem&0xfff);
+		
+		uint32_t value=0;
+		if(imm){
+			value = off;
+		}
+		else {
+		
+		}
 	}
 	else if((rem&0xE400F90)==0x90){
 		//LDRH reg
@@ -343,7 +357,8 @@ void CPU::execute(unsigned int op){
 		wait(2, 1,1);
 	}
 	
-	
+	wait(swait, nwait,iwait);
+
 }
 
 void CPU::trap(){
@@ -395,5 +410,11 @@ int main(int argc, char* argv[]){
 	cpu.R[2]=1;
 	cpu.R[16]=0x40000000;
 	cpu.execute(0x910002);
+	
+	cpu.R[1]=5;
+	cpu.R[2]=3;
+	cpu.R[3]=-9;
+	cpu.R[16]=0x40000000;
+	cpu.executeThumb(0x1f48);
 	return 0;
 }
