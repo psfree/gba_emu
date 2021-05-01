@@ -292,18 +292,33 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
 		}
 	}
 	else {
-		R[Rn]+=value;
+		//R[Rn]+=value;
 		ld_addr=R[Rn]+value;
 		if(writeback) R[Rn]=ld_addr;
 	}
-	
+	//TODO: bigend control signal?
 	if(byte){
+		if(store){
+			mmu.setByte(ld_addr, R[Rd]&0xff);
+		}
+		else {
+			R[Rd] = mmu.getByte(ld_addr);
+		}
 	}
 	else{
 		//TODO: word alignment 
-		MMU m;
-		m.setWord(ld_addr, 0xffffffff);
-		R[Rd] = m.getWord(ld_addr);
+		if(store) {
+			//always store word aligned
+			mmu.setWord(ld_addr&0xFFFFFFFC, R[Rd]);
+		}
+		else {
+			//mmu.setWord(ld_addr, 0xffffffff);
+			//rotate misaligned addresses into register
+			uint8_t rotate = (ld_addr&0x3)*8;
+			
+			R[Rd] = rotr32(mmu.getWord(ld_addr),rotate);
+		}
+		
 	}
 
  }
@@ -447,6 +462,12 @@ int main(int argc, char* argv[]){
 	cpu.R[16]=0x40000000;
 	cpu.execute(0xE5910000);
 	
-	
+	//test str/ld
+	cpu.R[1] = 0x4;
+	cpu.R[2] = 0x0a0b0c0d;
+	cpu.ARM_LDR(2, 1, /*off*/0, true, false, false,false, false, true);
+	cpu.R[1]=2;
+	cpu.ARM_LDR(3, 1, /*off*/0, true, false, false,false, false, false);
+	cout << cpu.mmu.getWord(4)<<endl;
 	return 0;
 }

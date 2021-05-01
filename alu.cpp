@@ -1,6 +1,6 @@
 #include "alu.hpp"
 namespace ALU {
-	static inline uint32_t rotr32 (uint32_t n, unsigned int c)
+	uint32_t rotr32(uint32_t n, unsigned int c)
 	{
 	  const unsigned int mask = (CHAR_BIT*sizeof(n) - 1);
 

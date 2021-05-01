@@ -3,7 +3,7 @@
 #include <limits.h>   // for CHAR_BIT
 #include "cpu.hpp"
 namespace ALU {
-	static inline uint32_t rotr32 (uint32_t n, unsigned int c);
+	uint32_t rotr32 (uint32_t n, unsigned int c);
 	uint8_t aluCarry();
 	uint8_t aluOverflow();
 	uint32_t ADD(uint64_t a, uint64_t b);
