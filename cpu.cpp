@@ -216,34 +216,117 @@ void CPU::dataProcessing(int rem) {
 		}
 }
 
+void CPU::ARM_BX(uint8_t Rn){
+	R[15]=R[Rn];
+	swait=2;
+	nwait=1;
+}
+
+void CPU::ARM_BL(uint32_t off, bool link){
+	if(link){
+		R[14]=R[15];
+	}
+	R[15]+=off;
+	swait=2;
+	nwait=1;
+}
+
+void CPU::ARM_MUL(uint8_t Rd, uint8_t Rm, uint8_t Rs,uint8_t Rn, bool accumulate, bool setCond){
+	if(Rd==15||Rs==15||Rm==15) trap();
+	if(Rd==Rm||Rd==Rs) trap();
+	
+	uint32_t a = 0;
+	if(accumulate) a=R[Rn];
+	R[Rd] = R[Rm]*R[Rs] + a;
+	if(setCond){
+		if(R[Rd]>>31) setN(); else clearN();
+		if(R[Rd]==0) setZ(); else clearZ();
+	}
+	swait=1;
+	iwait=multCycles(R[Rs])+2;
+}
+
+void CPU::ARM_MULL(uint8_t Rd_hi, uint8_t Rd_lo, uint8_t Rs,uint8_t Rm, bool accumulate,
+			bool setCond, bool sign ){
+	if(Rd_hi==15||Rd_lo==15||Rs==15||Rm==15) trap();
+	if(Rd_hi==Rd_lo || Rd_hi==Rm||Rd_lo==Rm) trap();
+	uint64_t out =0;
+	if(sign) {
+		//TODO:smarter sign extension
+		int64_t sRm = R[Rm];
+		if((sRm&0xf0000000)==0xf0000000) sRm|=0xffffffff00000000LL;
+		int64_t sRs = R[Rs];
+		if((sRs&0xf0000000)==0xf0000000) sRs|=0xffffffff00000000LL;
+		int64_t sout = sRm*sRs;
+		out = (uint64_t)sout;
+	}else{
+		out = ((uint64_t)R[Rm]) * (uint64_t)R[Rs];
+	}
+	if(accumulate){
+		out+=R[Rd_hi]+R[Rd_lo];
+	}
+	R[Rd_lo] = out&0xffffffff;
+	R[Rd_hi] = out>>32;
+	if(setCond){
+		if(R[Rd_hi]>>31) setN(); else clearN();
+		if(R[Rd_hi]==0&&R[Rd_lo]==0) setZ(); else clearZ();
+	}
+	swait = 1;
+	iwait = multCycles(R[Rs])+1;
+	if(accumulate) iwait++;
+}
+
+void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down,
+ bool byte, bool writeback, bool store){
+ 	uint32_t value=0;
+	if(imm) value = off;
+	else value = handleshift(off);
+	
+	if(down) value=-value;
+	uint32_t ld_addr =0;
+	if(post){
+		ld_addr=R[Rn];
+		R[Rn]+=value;
+		if(writeback){
+			//TODO: post indexed write back mode priveleged edgecase
+		}
+	}
+	else {
+		R[Rn]+=value;
+		ld_addr=R[Rn]+value;
+		if(writeback) R[Rn]=ld_addr;
+	}
+	
+	if(byte){
+	}
+	else{
+		//TODO: word alignment 
+		MMU m;
+		m.setWord(ld_addr, 0xffffffff);
+		R[Rd] = m.getWord(ld_addr);
+	}
+
+ }
+
 void CPU::execute(unsigned int op){
 	iwait=swait=nwait=0;
 	unsigned int cond = op>>27;
 	if(!condition(cond)) return;
 	int rem = op&0x0fffffff;
 	if((rem&0xfffff0)==0x12fff10){
-		//BX 2s+N
 		int Rn = rem&0xf;
 		if(Rn&1){
 			Rn=0;
-			//TODO: thumb mode;
+			//TODO: thumb mode switch
 		}
-		R[15]=R[Rn];
-		swait=2;
-		nwait=1;
+		ARM_BX(Rn);
 	}
 	else if((rem&0x0f000000)==0x0a000000){
 		//BL
 		int off= (rem&0xFFFFFF) <<2;
 		if(off>>25==1) off|=0xFE000000;
-
-		if(rem&0x1000000){
-			//LINK
-			R[14]=R[15];
-		}
-		R[15]+=off;
-		swait=2;
-		nwait=1;
+		bool link = (rem&0x1000000)==1;
+		ARM_BL(off, link);
 	}
 	else if((rem&0xFC000F0)==0x90){
 		//MUL
@@ -253,16 +336,7 @@ void CPU::execute(unsigned int op){
 		uint8_t Rn = ((rem>>12)&0xf);
 		uint8_t Rs = ((rem>>8)&0xf);
 		uint8_t Rm = (rem&0xf);
-		if(Rd==15||Rs==15||Rm==15) trap();
-		if(Rd==Rm||Rd==Rs) trap();
-		if(!accumulate) Rn=0;
-		R[Rd] = R[Rm]*R[Rs];
-		if(setCond){
-			if(R[Rd]>>31) setN(); else clearN();
-			if(R[Rd]==0) setZ(); else clearZ();
-		}
-		swait=1;
-		iwait=multCycles(R[Rs])+2;
+		ARM_MUL(Rd,Rm,Rs,Rn, accumulate, setCond);
 	}
 	else if((rem&0xF8000F0)==0x800090){
 		//MULL
@@ -273,33 +347,7 @@ void CPU::execute(unsigned int op){
 		uint8_t Rd_lo = ((rem>>12)&0xf);
 		uint8_t Rs = ((rem>>8)&0xf);
 		uint8_t Rm = (rem&0xf);
-		if(Rd_hi==15||Rd_lo==15||Rs==15||Rm==15) trap();
-		if(Rd_hi==Rd_lo || Rd_hi==Rm||Rd_lo==Rm) trap();
-		uint64_t out =0;
-		if(sign) {
-			//TODO:smarter sign extension
-			int64_t sRm = R[Rm];
-			if((sRm&0xf0000000)==0xf0000000) sRm|=0xffffffff00000000LL;
-			int64_t sRs = R[Rs];
-			if((sRs&0xf0000000)==0xf0000000) sRs|=0xffffffff00000000LL;
-			int64_t sout = sRm*sRs;
-			out = (uint64_t)sout;
-		}else{
-			out = ((uint64_t)R[Rm]) * (uint64_t)R[Rs];
-		}
-		if(accumulate){
-			out+=R[Rd_hi]+R[Rd_lo];
-		}
-		R[Rd_lo] = out&0xffffffff;
-		R[Rd_hi] = out>>32;
-		if(setCond){
-			if(R[Rd_hi]>>31) setN(); else clearN();
-			if(R[Rd_hi]==0&&R[Rd_lo]==0) setZ(); else clearZ();
-		}
-		swait = 1;
-		iwait = multCycles(R[Rs])+1;
-		if(accumulate) iwait++;
-		
+		ARM_MULL(Rd_hi,Rd_lo, Rs,Rm, accumulate, setCond,sign);
 	}
 	else if((rem&0xC000000)==0x4000000){
 		//LDR
@@ -312,41 +360,7 @@ void CPU::execute(unsigned int op){
 		uint8_t Rn = ((rem>>16)&0xf);
 		uint8_t Rd = ((rem>>12)&0xf);
 		uint32_t off = (rem&0xfff);
-		
-		uint32_t value=0;
-		if(imm){
-			value = off;
-		}
-		else {
-			value = handleshift(off);
-		}
-		if(down){
-			value=-value;
-		}
-		//TODO: post indexed write back mode priveleged
-		uint32_t ld_addr =0;
-		if(post){
-			ld_addr=R[Rn];
-			R[Rn]+=value;
-			if(writeback){
-				//TODO: post indexed write back mode priveleged edgecase
-			}
-		}
-		else {
-			R[Rn]+=value;
-			ld_addr=R[Rn]+value;
-			if(writeback) R[Rn]=ld_addr;
-		}
-		
-		if(byte){
-		}
-		else{
-			//TODO: word alignment 
-			MMU m;
-			m.setWord(ld_addr, 0xffffffff);
-			R[Rd] = m.getWord(ld_addr);
-		}
-		
+		ARM_LDR(Rd,Rn,off,imm,post,down,byte,writeback,store);		
 	}
 	else if((rem&0xE400F90)==0x90){
 		//LDRH reg
@@ -365,6 +379,7 @@ void CPU::execute(unsigned int op){
 	}
 	else if((rem&0xF000010)==0xE000000){
 		//cdp
+		//Not required (unless im mistaken)
 	}
 	else if((rem&0xE000000)==0xC000000){
 		//LDC

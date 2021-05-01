@@ -108,4 +108,11 @@ public:
 			
 	void trap();
 	
+	void ARM_BX(uint8_t Rn);
+	void ARM_BL(uint32_t off, bool link);
+	void ARM_MUL(uint8_t Rd, uint8_t Rm, uint8_t Rs,uint8_t Rn, bool accumulate, bool setCond);
+	void ARM_MULL(uint8_t Rd_hi, uint8_t Rd_lo, uint8_t Rs,uint8_t Rm, bool accumulate,
+			bool setCond, bool sign );
+	void ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down,
+ 		bool byte, bool writeback, bool store);
 };

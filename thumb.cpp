@@ -4,7 +4,7 @@
 using namespace ALU;
 void CPU::executeThumb(uint16_t op){
 	if((op>>11)==3){
-		//ADD - validated
+		//ADD - fully validated
 		bool imm = ((op&0x400)>>10)==1;
 		bool sub = ((op>>9)&1)==1;
 		uint8_t Rn_off = ((op&0x1c0)>>6);
