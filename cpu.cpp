@@ -34,10 +34,10 @@ void CPU::clearV(){
 	R[16]&=0xEFFFFFFF;
 }	
 bool CPU::condition(int cond){
-	int V=(*CPsR>>28)&1;
-	int C=(*CPsR>>29)&1;
-	int Z=(*CPsR>>30)&1;
-	int N=(*CPsR>>31)&1;
+	int V=(R.CPSR>>28)&1;
+	int C=(R.CPSR>>29)&1;
+	int Z=(R.CPSR>>30)&1;
+	int N=(R.CPSR>>31)&1;
 	switch(cond) {
 		case 0b0000:
 			return Z==1;
@@ -575,20 +575,20 @@ int main(int argc, char* argv[]){
     LOG_F(INFO, "main function about to end!");
 	CPU cpu;
 	//cpu.execute(0xA800003);
-	cpu.R15=-1;
+	//cpu.R15=-1;
 	for(int i=0; i<4; i++){
 		cout << hex<<shifter(0xF0000001, 2, i)<<endl;
 	}
 	
 	cpu.R[1]=-10;
 	cpu.R[2]=20;
-	cpu.R[16]=0x40000000;
+	cpu.R.CPSR=0x40000000;
 	cpu.execute(0x100192);
 	LOG_F(INFO, "pc=%d", cpu.R[15]);
 	
 	cpu.R[1]=-10;
 	cpu.R[2]=20;
-	cpu.R[16]=0x40000000;
+	cpu.R.CPSR=0x40000000;
 	cpu.execute(0xD45192);
 	cout << cpu.R[4]<<endl;
 	cout <<cpu.R[5]<<endl;
@@ -596,13 +596,13 @@ int main(int argc, char* argv[]){
 	//flag tet
 	cpu.R[1]=0xffffffff;
 	cpu.R[2]=1;
-	cpu.R[16]=0x40000000;
+	cpu.R.CPSR=0x40000000;
 	cpu.execute(0x910002);
 	
 	cpu.R[1]=5;
 	cpu.R[2]=3;
 	cpu.R[3]=-9;
-	cpu.R[16]=0x40000000;
+	cpu.R.CPSR=0x40000000;
 	cpu.executeThumb(0x1f48);
 	cpu.R[1]=0x0;
 	cpu.R[16]=0x40000000;

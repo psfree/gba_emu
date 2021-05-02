@@ -4,22 +4,24 @@
 #include "alu.hpp"
 #include "mmu.hpp"
 
-class CPU{
-private:
-	uint8_t iwait=0;
-	uint8_t swait=0;
-	uint8_t nwait=0;
-	
-	uint8_t BIGEND=0;
-	
-public:
-	MMU mmu;
-	unsigned int R[37] = {0};	
+//TODO: make Sure thiS lineS up with how CPSr repreSentS mode bitS
+enum CPUMode{
+	USER,
+	FIQ,
+	IRQ,
+	SVC,
+	ABT,
+	UND,
+	SYS
+};
+
+class RegisterFile {
+	uint32_t R[37] = {0};
 	unsigned int R13;//sp
 	unsigned int R14;//LR
 	unsigned int R15;//PC
 	
-	unsigned int *CPsR=&R[16];
+	//unsigned int *CPSR=&R[16];
 	unsigned int *sPsR=&R[17];
 	
 	unsigned int *R8_fiq=&R[18];
@@ -46,6 +48,54 @@ public:
 	unsigned int *R13_und=&R[35];
 	unsigned int *R14_und=&R[36];
 	unsigned int *sPsR_und=&R[37];
+
+	int mode = CPUMode::USER;
+	public:
+	uint32_t CPSR = 0;
+	
+	uint32_t& operator[](int r){
+		if(mode==CPUMode::USER){
+			return R[r];
+		}
+		else if(mode==CPUMode::FIQ){
+			if(r<8) return R[r];
+			else return R[r+10];
+		}
+		else if(mode==CPUMode::SVC){
+			if(r<13) return R[r];
+			else return R[r+13];
+		}
+		else if(mode==CPUMode::ABT){
+			if(r<13) return R[r];
+			else return R[r+16];
+		}
+		else if(mode==CPUMode::IRQ){
+			if(r<13) return R[r];
+			else return R[r+19];
+		}
+		else if(mode==CPUMode::UND){
+			if(r<13) return R[r];
+			else return R[r+22];
+		}
+	}
+	
+	
+
+};
+
+class CPU{
+private:
+	uint8_t iwait=0;
+	uint8_t swait=0;
+	uint8_t nwait=0;
+	
+	uint8_t BIGEND=0;
+	
+public:
+	MMU mmu;
+	RegisterFile R;
+	unsigned int x=0;
+	unsigned int *CPsR=&x;
 	
 	
 	void clearFlags();
