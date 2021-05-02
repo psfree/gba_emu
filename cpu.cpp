@@ -106,21 +106,16 @@ uint32_t CPU::handleshift(uint32_t operand2){
 	}
 	return value;
 } 
-
-void CPU::dataProcessing(int rem) {
+void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t operand2,
+		 bool imm, bool setcond) {
 		//TODO: MRs, R15 handling, other special cases
-		bool imm = (rem>>25)==1;
-		unsigned int opcode = (rem >>21)&0xf;
-		bool setcond = ((rem>>20)&1)==1;
-		unsigned int Rn = (rem>>16)&0xf;
-		unsigned int Rd = (rem>>12)&0xf;
-		unsigned int operand2 = (rem&0xfff);
-		
+
 		if(Rd==15) { 
 			swait++;
 			nwait++;
 		}
-		
+		//TODO:might wish to pull out shifting to make THUMB mapping easier
+		//i.e. use value instead of operand2 as argument
 		int flagsOut=0;
 		unsigned int value = 0;
 		if(imm){
@@ -439,7 +434,25 @@ void CPU::ARM_LDM(uint8_t Rn, uint16_t Rlist, bool post, bool down, bool psr,
 		} 
 	}
 }
-
+void CPU::ARM_SWP(uint8_t Rd, uint8_t Rn, uint8_t Rm, bool byte){
+	if(Rd==15||Rn==15||Rm==15) trap();
+	//TODO: intended to implement LDR followed by str
+	//is it possible that the behavior is different doing it like this?
+	if(byte){
+		uint8_t tmp = mmu.getByte(R[Rn]);
+		mmu.setByte(R[Rn],R[Rm]&0xff);
+		R[Rd] = tmp;
+	}
+	else {
+		uint32_t tmp = mmu.getWord(R[Rn]);
+		mmu.setWord(R[Rn],R[Rm]);
+		R[Rd] = tmp;
+	}
+	
+	iwait=swait=1;
+	nwait=2;
+	
+}
 
 void CPU::execute(unsigned int op){
 	iwait=swait=nwait=0;
@@ -534,6 +547,11 @@ void CPU::execute(unsigned int op){
 	}
 	else if((rem&0xFB00FF0)==0x1000090){
 		//swp
+		bool byte = ((rem>>22)&1)==1;
+		uint8_t Rn = ((rem>>16)&0xf);
+		uint8_t Rd = ((rem>>12)&0xf);
+		uint8_t Rm = (rem&0xf);
+		ARM_SWP(Rd,Rn,Rm, byte);
 	}
 	else if((rem&0xF000000)==0xF000000){
 		//swi
@@ -551,7 +569,13 @@ void CPU::execute(unsigned int op){
 	//probably last in order
 	else if((rem&0xc000000)==0x0) {
 		//Data processing
-		dataProcessing(rem);
+		bool imm = (rem>>25)==1;
+		uint8_t opcode = (rem >>21)&0xf;
+		bool setcond = ((rem>>20)&1)==1;
+		uint32_t Rn = (rem>>16)&0xf;
+		uint32_t Rd = (rem>>12)&0xf;
+		uint32_t operand2 = (rem&0xfff);
+		ARM_DataProcessing(opcode, Rd,Rn, operand2, imm, setcond);
 	}
 	else {
 		//trap undefined, may need explicit check for op
@@ -626,5 +650,11 @@ int main(int argc, char* argv[]){
 	cpu.R[5] = 0x0;
 	cpu.R[7] = 0x0;
 	cpu.ARM_LDM(0, 0b10100010, false, true, false, true, false);
+	
+	//test swp
+	cpu.R[0] =0x1000;
+	cpu.R[1] = 0xFFFFFFFF;
+	cpu.R[5] = 0x50000000;
+	cpu.ARM_SWP(5, 0, 1, true);
 	return 0;
 }

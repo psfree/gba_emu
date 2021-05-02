@@ -27,7 +27,8 @@ void CPU::executeThumb(uint16_t op){
 			rem|=0x2000000;
 			rem|=Rn_off;
 		}
-		dataProcessing(rem);
+		
+		//dataProcessing(rem);
 	}
 	else if((op>>13)==0) {
 		//Msr

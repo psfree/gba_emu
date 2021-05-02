@@ -117,13 +117,15 @@ public:
 	
 	uint32_t multCycles(int op2);
 	
-	void dataProcessing(int rem);
+	
 	
 	void execute(unsigned int op);
 	void executeThumb(uint16_t op);
 			
 	void trap();
 	
+	void ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t operand2,
+		 bool imm, bool setcond);
 	void ARM_BX(uint8_t Rn);
 	void ARM_BL(uint32_t off, bool link);
 	void ARM_MUL(uint8_t Rd, uint8_t Rm, uint8_t Rs,uint8_t Rn, bool accumulate, bool setCond);
@@ -135,4 +137,5 @@ public:
  		bool writeback, bool store, bool sign, bool halfwords);
  	void ARM_LDM(uint8_t Rn, uint16_t Rlist, bool post, bool down, bool psr, 
 		bool writeback, bool store);
+	void ARM_SWP(uint8_t Rd, uint8_t Rn, uint8_t Rm, bool byte);
 };
