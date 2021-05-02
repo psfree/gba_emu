@@ -376,6 +376,70 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
 		if(Rd==15) swait=nwait=2;
  }
 
+void CPU::ARM_LDM(uint8_t Rn, uint16_t Rlist, bool post, bool down, bool psr, 
+	bool writeback, bool store){
+
+	uint8_t Regs[16];
+	int rcount =0;
+	bool containsPC=false;
+	for(int i=0; i<16; i++){
+		if(Rlist&(1<<i)){
+			Regs[rcount++] = i;
+			if(i==15) {
+				containsPC=true;
+			}
+		}
+	}
+	
+	if(psr&&!store&&containsPC){
+		//load spsr when r15 loaded
+	}
+	if(psr&&store&&containsPC){
+		//use user bank, no writeback should be used 
+	}
+	else if(psr&&!containsPC){
+		//use user bank
+	}
+	
+	uint32_t base = R[Rn];
+	
+	uint32_t off=0;
+	if(down) {
+		for(int i=rcount-1; i>=0; i--){
+			if(!post) off-=4;
+			if(store) mmu.setWord(base+off, R[Regs[i]]);
+			else R[Regs[i]] = mmu.getWord(base+off);
+			if(post) off-=4;
+		}
+	}
+	else {
+		for(int i=0;i<rcount; i++){
+			if(!post) off+=4;
+			if(store) mmu.setWord(base+off, R[Regs[i]]);
+			else R[Regs[i]] = mmu.getWord(base+off);
+			if(post) off+=4;
+		}
+	}
+	
+	if(writeback) {
+		R[Rn]+=off;
+	}
+	
+	//waits
+	if(store){
+		swait=(rcount-1);
+		nwait=2;
+	}
+	else {
+		swait=rcount;
+		nwait=iwait=1;
+		if(containsPC){
+			nwait++;
+			swait++;
+		} 
+	}
+}
+
 
 void CPU::execute(unsigned int op){
 	iwait=swait=nwait=0;
@@ -431,11 +495,11 @@ void CPU::execute(unsigned int op){
 		uint32_t off = (rem&0xfff);
 		ARM_LDR(Rd,Rn,off,imm,post,down,byte,writeback,store);		
 	}
-	else if((rem&0xE400F90)==0x90){
-		//LDRH reg
+	else if((rem&0xE000F90)==0x90){
+		//LDRH
 		bool imm = ((rem>>22)==1);
 		bool post = ((rem>>24)&1)==0;
-		bool down = ((rem>>21)&1)==0;
+		bool down = ((rem>>23)&1)==0;
 		bool writeback = ((rem>>21)&1)==1;
 		bool store = ((rem>>20)&1)==0;
 		uint8_t Rn = ((rem>>16)&0xf);
@@ -455,11 +519,18 @@ void CPU::execute(unsigned int op){
 		
 		ARM_LDRH(Rd, Rn, off, imm, post, down, writeback, store, sign, halfwords);
 	}
-	else if((rem&0xE400F90)==0x400090){
-		//LDRH immediate
-	}
 	else if((rem&0xE000000)==0x8000000){
 		//LDM
+		bool post = ((rem>>24)&1)==0;
+		bool down = ((rem>>23)&1)==0;
+		bool psr = ((rem>>22)&1)==1;
+		bool writeback = ((rem>>21)&1)==0;
+		bool store = ((rem>>20)&1)==0;
+		uint8_t Rn = ((rem>>16)&0xf);
+		uint16_t Rlist = rem&0xfff;
+		
+		ARM_LDM(Rn, Rlist, post, down, psr, writeback, store);
+		
 	}
 	else if((rem&0xFB00FF0)==0x1000090){
 		//swp
@@ -544,5 +615,16 @@ int main(int argc, char* argv[]){
 	cpu.R[1]=2;
 	cpu.ARM_LDR(3, 1, /*off*/0, true, false, false,false, false, false);
 	cout << cpu.mmu.getWord(4)<<endl;
+	
+	//test stm
+	cpu.R[0] =0x1000;
+	cpu.R[1] = 0x10000000;
+	cpu.R[5] = 0x50000000;
+	cpu.R[7] = 0x70000000;
+	cpu.ARM_LDM(0, 0b10100010, true, false, false, true, true);
+	cpu.R[1] = 0x0;
+	cpu.R[5] = 0x0;
+	cpu.R[7] = 0x0;
+	cpu.ARM_LDM(0, 0b10100010, false, true, false, true, false);
 	return 0;
 }

@@ -83,4 +83,6 @@ public:
  		bool byte, bool writeback, bool store);
  	void ARM_LDRH(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down, 
  		bool writeback, bool store, bool sign, bool halfwords);
+ 	void ARM_LDM(uint8_t Rn, uint16_t Rlist, bool post, bool down, bool psr, 
+		bool writeback, bool store);
 };
