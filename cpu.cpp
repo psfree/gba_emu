@@ -254,9 +254,9 @@ void CPU::ARM_MULL(uint8_t Rd_hi, uint8_t Rd_lo, uint8_t Rs,uint8_t Rm, bool acc
 	if(sign) {
 		//TODO:smarter sign extension
 		int64_t sRm = R[Rm];
-		if((sRm&0xf0000000)==0xf0000000) sRm|=0xffffffff00000000LL;
+		if((sRm&0xf0000000)==0x80000000) sRm|=0xffffffff00000000LL;
 		int64_t sRs = R[Rs];
-		if((sRs&0xf0000000)==0xf0000000) sRs|=0xffffffff00000000LL;
+		if((sRs&0xf0000000)==0x80000000) sRs|=0xffffffff00000000LL;
 		int64_t sout = sRm*sRs;
 		out = (uint64_t)sout;
 	}else{
@@ -282,6 +282,8 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
 	if(imm) value = off;
 	else value = handleshift(off);
 	
+	//TODO: handle R15 cases
+	
 	if(down) value=-value;
 	uint32_t ld_addr =0;
 	if(post){
@@ -298,30 +300,82 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
 	}
 	//TODO: bigend control signal?
 	if(byte){
-		if(store){
-			mmu.setByte(ld_addr, R[Rd]&0xff);
-		}
-		else {
-			R[Rd] = mmu.getByte(ld_addr);
-		}
+		if(store) mmu.setByte(ld_addr, R[Rd]&0xff);
+		else R[Rd] = mmu.getByte(ld_addr);
 	}
 	else{
-		//TODO: word alignment 
 		if(store) {
 			//always store word aligned
-			mmu.setWord(ld_addr&0xFFFFFFFC, R[Rd]);
+			int pc=0;
+			if(Rd==15) pc=12;
+			mmu.setWord(ld_addr&0xFFFFFFFC, R[Rd]+pc);
 		}
 		else {
-			//mmu.setWord(ld_addr, 0xffffffff);
 			//rotate misaligned addresses into register
 			uint8_t rotate = (ld_addr&0x3)*8;
-			
 			R[Rd] = rotr32(mmu.getWord(ld_addr),rotate);
 		}
 		
 	}
+	
+	if(store) {
+		nwait=2;
+	}
+	else {
+		iwait=nwait=swait=1;
+		if(Rd==15){
+			swait++;
+			nwait++;
+		}
+	}
 
  }
+ 
+ void CPU::ARM_LDRH(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down, 
+ 	bool writeback, bool store, bool sign, bool halfwords) {
+		uint32_t ld_addr=0;
+		if(post){
+			ld_addr=R[Rn];
+			R[Rn]+=off;
+			if(writeback){
+				//do nothing
+			}
+		}
+		else {
+			ld_addr=R[Rn]+off;
+			if(writeback) R[Rn]=ld_addr;
+		}
+	
+		if(halfwords){
+			if(store) {
+				if(sign) trap();
+				uint8_t pc=0;
+				if(Rd==15) pc=12;
+				mmu.setHalf(ld_addr, R[Rd]+pc);
+		
+			}
+			else {
+				R[Rd] = mmu.getHalf(ld_addr);
+				if(sign){
+					if(R[Rd]>>7 == 1) R[Rd]|=0xffffff00;
+				}
+			}
+		}
+		else{
+			if(sign){
+				if(store) trap(); //no signed stores;
+				R[Rd] = mmu.getByte(ld_addr);
+				if(R[Rd]>>7 == 1) R[Rd]|=0xffffff00;
+			}
+			else {
+				//swp? probably need to decode swp first to prevent this
+			}
+	
+		}
+		swait=nwait=iwait=1;
+		if(Rd==15) swait=nwait=2;
+ }
+
 
 void CPU::execute(unsigned int op){
 	iwait=swait=nwait=0;
@@ -379,6 +433,27 @@ void CPU::execute(unsigned int op){
 	}
 	else if((rem&0xE400F90)==0x90){
 		//LDRH reg
+		bool imm = ((rem>>22)==1);
+		bool post = ((rem>>24)&1)==0;
+		bool down = ((rem>>21)&1)==0;
+		bool writeback = ((rem>>21)&1)==1;
+		bool store = ((rem>>20)&1)==0;
+		uint8_t Rn = ((rem>>16)&0xf);
+		uint8_t Rd = ((rem>>12)&0xf);
+		bool sign = ((rem>>6)&1)==1;
+		bool halfwords = ((rem>>5)&1)==1;
+		uint8_t off_hi = ((rem>>8)&0xff);
+		uint8_t Rm_off = (rem&0xff);
+	
+		uint32_t off =0;
+		if(imm) off = (off_hi<<4)&Rm_off;
+		else {
+			if(Rm_off==15) trap(); //not allowed
+			off = R[Rm_off];
+		}
+		if(down) off=-off;
+		
+		ARM_LDRH(Rd, Rn, off, imm, post, down, writeback, store, sign, halfwords);
 	}
 	else if((rem&0xE400F90)==0x400090){
 		//LDRH immediate

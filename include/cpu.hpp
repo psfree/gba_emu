@@ -81,4 +81,6 @@ public:
 			bool setCond, bool sign );
 	void ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down,
  		bool byte, bool writeback, bool store);
+ 	void ARM_LDRH(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down, 
+ 		bool writeback, bool store, bool sign, bool halfwords);
 };

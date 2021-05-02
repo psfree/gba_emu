@@ -67,9 +67,6 @@ class MMU {
 		return memfault();
 	}
 	uint32_t getWord(uint32_t addr){
-		if(addr%4!=0){
-			//TODO: non aligned read
-		}
 		uint32_t * paddr  = static_cast<uint32_t*>(map(addr));
 		return *paddr;
 	}
@@ -85,6 +82,15 @@ class MMU {
 	
 	void setByte(uint32_t addr, uint8_t val) {
 		uint8_t * paddr = static_cast<uint8_t*>(map(addr));
+		*paddr = val;
+	}
+	
+	uint16_t getHalf(uint32_t addr){
+		uint16_t * paddr = static_cast<uint16_t*>(map(addr));
+		return *paddr;
+	}
+	void setHalf(uint32_t addr, uint16_t val){
+		uint16_t * paddr = static_cast<uint16_t*>(map(addr));
 		*paddr = val;
 	}
 	
