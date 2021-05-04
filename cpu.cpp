@@ -2,36 +2,56 @@
 using namespace std;
 using namespace ALU;
 //S
+#define RESET_VECTOR 0x0
+#define UND_HANDLER 0x4
+#define SVC_HANDLER 0x8
+/*
+enum Exception {
+	RESET = 0x0,
+	UNDEFINED = 0x4,
+	SVC = 0x8,
+	ABT_PREFETCH = 0xc,
+	ABT_DATA = 0x10,
+	IRQ = 0x18,
+	FIQ = 0x1C
+};
+
+void CPU::exception(Exception e){
+	if(RESET) {
+		mode = CPUMode.SVC;
+	}
+} */
+
 
 void CPU::clearFlags(){
-	R[16]&=0x0FFFFFFF;
+	R.CPSR&=0x0FFFFFFF;
 }
 void CPU::setZ(){
-	R[16]|=0x40000000;
+	R.CPSR|=0x40000000;
 }
 void CPU::clearZ(){
-	R[16]&=0xBFFFFFFF;
+	R.CPSR&=0xBFFFFFFF;
 }
 void CPU::setN(){
-	R[16]|=0x80000000;
+	R.CPSR|=0x80000000;
 }
 void CPU::clearN(){
-	R[16]&=0x7FFFFFFF;
+	R.CPSR&=0x7FFFFFFF;
 }
 uint8_t CPU::getC(){
-	return (R[16]&0x20000000)>>29;
+	return (R.CPSR&0x20000000)>>29;
 }
 void CPU::setC(){
-	R[16]|=0x20000000;
+	R.CPSR|=0x20000000;
 }
 void CPU::clearC(){
-	R[16]&=0xDFFFFFFF;
+	R.CPSR&=0xDFFFFFFF;
 }
 void CPU::setV(){
-	R[16]|=0x10000000;
+	R.CPSR|=0x10000000;
 }
 void CPU::clearV(){
-	R[16]&=0xEFFFFFFF;
+	R.CPSR&=0xEFFFFFFF;
 }	
 bool CPU::condition(int cond){
 	int V=(R.CPSR>>28)&1;
@@ -467,13 +487,6 @@ void CPU::execute(unsigned int op){
 		}
 		ARM_BX(Rn);
 	}
-	else if((rem&0x0f000000)==0x0a000000){
-		//BL
-		int off= (rem&0xFFFFFF) <<2;
-		if(off>>25==1) off|=0xFE000000;
-		bool link = (rem&0x1000000)==1;
-		ARM_BL(off, link);
-	}
 	else if((rem&0xFC000F0)==0x90){
 		//MUL
 		bool accumulate = ((rem>>21)&1) == 1;
@@ -499,7 +512,7 @@ void CPU::execute(unsigned int op){
 		//LDR
 		bool imm = ((rem>>25)&1)==0;
 		bool post = ((rem>>24)&1)==0;
-		bool down = ((rem>>21)&1)==0;
+		bool down = ((rem>>23)&1)==0;
 		bool byte = ((rem>>22)&1)==1;
 		bool writeback = ((rem>>21)&1)==1;
 		bool store = ((rem>>20)&1)==0;
@@ -577,6 +590,13 @@ void CPU::execute(unsigned int op){
 		uint32_t operand2 = (rem&0xfff);
 		ARM_DataProcessing(opcode, Rd,Rn, operand2, imm, setcond);
 	}
+	else if((rem&0x0f000000)==0x0a000000){
+		//BL
+		int off= (rem&0xFFFFFF) <<2;
+		if(off>>25==1) off|=0xFE000000;
+		bool link = (rem&0x1000000)==1;
+		ARM_BL(off, link);
+	}
 	else {
 		//trap undefined, may need explicit check for op
 		trap();
@@ -592,12 +612,30 @@ void CPU::trap(){
 	*x++;
 }
 
+#include <cstdlib>
 
 int main(int argc, char* argv[]){
 	loguru::init(argc, argv);
     LOG_F(INFO, "Hello from main.cpp!");
     LOG_F(INFO, "main function about to end!");
 	CPU cpu;
+	string in;
+	while(getline(cin,in)) {
+		//00005EE3
+		int instr = stoi(in, nullptr,16);
+		uint32_t in = (instr&0xff) << 24;
+		in|=(instr&0xff00) <<8;
+		in|=(instr&0xff0000) >>8;
+		in|=(instr&0xff000000) >>24;
+		cpu.execute(in);
+	}
+	cpu.execute(0xE3A0000A);
+	cpu.execute(0xE3A01003);
+	cpu.execute(0xE0800001);
+	cpu.execute(0xE3A03018);
+	
+	
+	
 	//cpu.execute(0xA800003);
 	//cpu.R15=-1;
 	for(int i=0; i<4; i++){
@@ -629,7 +667,7 @@ int main(int argc, char* argv[]){
 	cpu.R.CPSR=0x40000000;
 	cpu.executeThumb(0x1f48);
 	cpu.R[1]=0x0;
-	cpu.R[16]=0x40000000;
+	cpu.R.CPSR=0x40000000;
 	cpu.execute(0xE5910000);
 	
 	//test str/ld

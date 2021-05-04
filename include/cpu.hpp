@@ -121,7 +121,8 @@ public:
 	
 	void execute(unsigned int op);
 	void executeThumb(uint16_t op);
-			
+	
+	//void exception(Exception e);
 	void trap();
 	
 	void ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t operand2,

@@ -1,5 +1,5 @@
 #pragma once
-#include "mmu.hpp"
+//#include "mmu.hpp"
 
 #define BIOS_LO 0x0
 #define BIOS_HI 0x4000
@@ -28,7 +28,9 @@
 class MMU {
     public:
 	//ram
-	uint8_t bios[0x4000];
+	#include "bios.hpp"
+
+	uint8_t * bios = bios_bin ;
 	uint8_t wram0[0x40000];
 	uint8_t wram1[0x8000];
 	uint8_t io[0x3ff];
