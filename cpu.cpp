@@ -107,7 +107,7 @@ uint32_t CPU::handleshift(uint32_t operand2){
 
 void CPU::execute(unsigned int op){
 	iwait=swait=nwait=0;
-	unsigned int cond = op>>27;
+	unsigned int cond = op>>28;
 	if(!condition(cond)) return;
 	int rem = op&0x0fffffff;
 	if((rem&0xfffff0)==0x12fff10){
@@ -215,6 +215,17 @@ void CPU::execute(unsigned int op){
 		uint8_t Rd = (rem>>12)&0xf;
 		ARM_MRS(Rd, spsr);
 	}
+	else if((rem&0xFBFFFF0)==0x129F000) { //msr using register
+		bool spsr = ((rem>>22)&1)==1;
+		uint8_t Rm = rem&0xf;
+		ARM_MSR_REG(Rm, spsr);
+	}
+	else if((rem&0xDBFF000)==0x128F000) { //msr immediate
+		bool imm = ((rem>>25)&1)==1;
+		bool spsr = ((rem>>22)&1)==1;
+		uint16_t operand2 = rem&0xfff;
+		ARM_MSR_IMM(operand2, spsr, imm);
+	}
 	//probably last in order
 	else if((rem&0xc000000)==0x0) {
 		//Data processing
@@ -259,7 +270,8 @@ int main(int argc, char* argv[]){
 	cpu.R.CPSR.Z=1;
 	while(getline(cin,in)) {
 		//00005EE3
-		int instr = stoi(in, nullptr,16);
+		long x = stol(in, nullptr,16);
+		uint32_t instr = (uint32_t)x;
 		uint32_t in = (instr&0xff) << 24;
 		in|=(instr&0xff00) <<8;
 		in|=(instr&0xff0000) >>8;

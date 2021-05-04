@@ -43,6 +43,17 @@ public:
 		return out;
 	}
 	
+	void fromInt(uint32_t in) {
+		N=((in>>31)&1)==1;
+		Z=((in>>30)&1)==1;
+		C=((in>>29)&1)==1;
+		V=((in>>28)&1)==1;
+		IRQ_disable= ((in>>7)&1)==1;
+		FIQ_disable=((in>>6)&1)==1;
+		Thumb=((in>>5)&1)==1;
+		mode= (CPUMode)(in&0x1F);
+	}
+	
 	
 };
  
@@ -90,7 +101,7 @@ class RegisterFile {
 	PSR SPSR_irq;
 	PSR SPSR_und;
 	
-	PSR SPSR() {
+	PSR& SPSR() {
 		return SPSR_user;
 	}
 	
@@ -169,4 +180,6 @@ public:
 		bool writeback, bool store);
 	void ARM_SWP(uint8_t Rd, uint8_t Rn, uint8_t Rm, bool byte);
 	void ARM_MRS(uint8_t Rd, bool spsr);
+	void ARM_MSR_REG(uint8_t Rm, bool spsr);
+	void ARM_MSR_IMM(uint16_t operand2, bool spsr, bool imm);
 };

@@ -348,6 +348,44 @@ void CPU::ARM_SWP(uint8_t Rd, uint8_t Rn, uint8_t Rm, bool byte){
 	
 }
 
+//TODO: verify mode perms
 void CPU::ARM_MRS(uint8_t Rd, bool spsr) {
+	if(spsr) {
+		R[Rd] = R.SPSR().asInt();
+	}
+	else {
+		R[Rd] = R.CPSR.asInt();
+	}
+	swait=1;
+}
 
+void CPU::ARM_MSR_REG(uint8_t Rm, bool spsr){
+	if(spsr) {
+		R.SPSR().fromInt(R[Rm]);
+	}
+	else {
+		R.CPSR.fromInt(R[Rm]);
+	}
+	swait=1;
+}
+
+//TODO:verify only flags are set and other behavior
+void CPU::ARM_MSR_IMM(uint16_t operand2, bool spsr, bool imm){
+	uint32_t value = 0;
+	if(imm){
+		value = shifter(operand2&0xff,(operand2>>8)*2, 0b11 );
+	}
+	else {
+		value = handleshift(operand2);
+	}
+	
+	if(spsr) {
+		uint32_t old = R.SPSR().asInt() &0x0fffffff;
+		R.SPSR().fromInt(old|(value&0xf0000000));
+	}
+	else {
+		uint32_t old = R.CPSR.asInt() &0x0fffffff;
+		R.CPSR.fromInt(old|(value&0xf0000000));
+	}
+	swait=1;
 }
