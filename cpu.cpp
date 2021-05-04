@@ -24,40 +24,17 @@ void CPU::exception(Exception e){
 
 
 void CPU::clearFlags(){
-	R.CPSR&=0x0FFFFFFF;
+	R.CPSR.Z=0;
+	R.CPSR.N=0;
+	R.CPSR.C=0;
+	R.CPSR.V=0;
 }
-void CPU::setZ(){
-	R.CPSR|=0x40000000;
-}
-void CPU::clearZ(){
-	R.CPSR&=0xBFFFFFFF;
-}
-void CPU::setN(){
-	R.CPSR|=0x80000000;
-}
-void CPU::clearN(){
-	R.CPSR&=0x7FFFFFFF;
-}
-uint8_t CPU::getC(){
-	return (R.CPSR&0x20000000)>>29;
-}
-void CPU::setC(){
-	R.CPSR|=0x20000000;
-}
-void CPU::clearC(){
-	R.CPSR&=0xDFFFFFFF;
-}
-void CPU::setV(){
-	R.CPSR|=0x10000000;
-}
-void CPU::clearV(){
-	R.CPSR&=0xEFFFFFFF;
-}	
+	
 bool CPU::condition(int cond){
-	int V=(R.CPSR>>28)&1;
-	int C=(R.CPSR>>29)&1;
-	int Z=(R.CPSR>>30)&1;
-	int N=(R.CPSR>>31)&1;
+	int V=(R.CPSR.V);
+	int C=(R.CPSR.C);
+	int Z=(R.CPSR.Z);
+	int N=(R.CPSR.N);
 	switch(cond) {
 		case 0b0000:
 			return Z==1;
@@ -167,13 +144,13 @@ void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t 
 				R[Rd] = ADD(R[Rn],value);
 				break;
 			case 0b0101: //ADC
-				R[Rd] = ADD(R[Rn], value+getC());
+				R[Rd] = ADD(R[Rn], value+R.CPSR.C);
 				break;
 			case 0b0110: //sbc
-				R[Rd] = ADD(R[Rn], -value+getC()-1);
+				R[Rd] = ADD(R[Rn], -value+R.CPSR.C-1);
 				break;
 			case 0b0111: //rsc
-				R[Rd] = ADD(value,-R[Rn]+getC()-1);
+				R[Rd] = ADD(value,-R[Rn]+R.CPSR.C-1);
 				break;
 			case 0b1000: //tst
 				logical = test = true;
@@ -213,19 +190,19 @@ void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t 
 			clearFlags();
 			if(logical){
 				if(test) {
-					if(tst==0) setZ();
-					if(tst>>31==1) setN();
+					if(tst==0) R.CPSR.Z=1;
+					if(tst>>31==1) R.CPSR.N=1;
 				}else {
-					if(R[Rd]==0) setZ();
-					if(R[Rd]>>31==1) setN();
+					if(R[Rd]==0) R.CPSR.Z=1;
+					if(R[Rd]>>31==1) R.CPSR.N=1;
 				}
-				if(shiftCarry()==1) setC();
+				if(shiftCarry()==1) R.CPSR.Z=1;
 			}
 			else{
-				if(aluOverflow()==1) setV(); //TODO: make sure this is valid
-				if(aluCarry()==1) setC();
-				if(R[Rd]==0) setZ();
-				if((R[Rd]>>31)==1) setN();
+				if(aluOverflow()==1) R.CPSR.V=1; //TODO: make sure this is valid
+				if(aluCarry()==1) R.CPSR.C=1;
+				if(R[Rd]==0) R.CPSR.Z=1;
+				if((R[Rd]>>31)==1) R.CPSR.N=1;
 				
 			}
 		}
@@ -254,8 +231,8 @@ void CPU::ARM_MUL(uint8_t Rd, uint8_t Rm, uint8_t Rs,uint8_t Rn, bool accumulate
 	if(accumulate) a=R[Rn];
 	R[Rd] = R[Rm]*R[Rs] + a;
 	if(setCond){
-		if(R[Rd]>>31) setN(); else clearN();
-		if(R[Rd]==0) setZ(); else clearZ();
+		if(R[Rd]>>31) R.CPSR.N=1; else R.CPSR.N=0;
+		if(R[Rd]==0) R.CPSR.Z=1; else R.CPSR.Z=0;
 	}
 	swait=1;
 	iwait=multCycles(R[Rs])+2;
@@ -283,8 +260,8 @@ void CPU::ARM_MULL(uint8_t Rd_hi, uint8_t Rd_lo, uint8_t Rs,uint8_t Rm, bool acc
 	R[Rd_lo] = out&0xffffffff;
 	R[Rd_hi] = out>>32;
 	if(setCond){
-		if(R[Rd_hi]>>31) setN(); else clearN();
-		if(R[Rd_hi]==0&&R[Rd_lo]==0) setZ(); else clearZ();
+		if(R[Rd_hi]>>31) R.CPSR.N=1; else R.CPSR.N=0;
+		if(R[Rd_hi]==0&&R[Rd_lo]==0) R.CPSR.Z=1; else R.CPSR.Z=0;
 	}
 	swait = 1;
 	iwait = multCycles(R[Rs])+1;
@@ -644,13 +621,13 @@ int main(int argc, char* argv[]){
 	
 	cpu.R[1]=-10;
 	cpu.R[2]=20;
-	cpu.R.CPSR=0x40000000;
+	cpu.R.CPSR.Z=1;
 	cpu.execute(0x100192);
 	LOG_F(INFO, "pc=%d", cpu.R[15]);
 	
 	cpu.R[1]=-10;
 	cpu.R[2]=20;
-	cpu.R.CPSR=0x40000000;
+	cpu.R.CPSR.Z=1;
 	cpu.execute(0xD45192);
 	cout << cpu.R[4]<<endl;
 	cout <<cpu.R[5]<<endl;
@@ -658,16 +635,16 @@ int main(int argc, char* argv[]){
 	//flag tet
 	cpu.R[1]=0xffffffff;
 	cpu.R[2]=1;
-	cpu.R.CPSR=0x40000000;
+	cpu.R.CPSR.Z=1;
 	cpu.execute(0x910002);
 	
 	cpu.R[1]=5;
 	cpu.R[2]=3;
 	cpu.R[3]=-9;
-	cpu.R.CPSR=0x40000000;
+	cpu.R.CPSR.Z=1;
 	cpu.executeThumb(0x1f48);
 	cpu.R[1]=0x0;
-	cpu.R.CPSR=0x40000000;
+	cpu.R.CPSR.Z=1;
 	cpu.execute(0xE5910000);
 	
 	//test str/ld

@@ -6,14 +6,45 @@
 
 //TODO: make Sure thiS lineS up with how CPSr repreSentS mode bitS
 enum CPUMode{
-	USER,
-	FIQ,
-	IRQ,
-	SVC,
-	ABT,
-	UND,
-	SYS
+	USER = 0b10000,
+	FIQ = 0b10001,
+	IRQ = 0b10010,
+	SVC = 0b10011,
+	ABT = 0b10111,
+	UND = 0b11011,
+	SYS = 0b11111
 };
+
+class PSR {
+public:
+	bool N=false;
+	bool Z=false;
+	bool C=false;
+	bool V=false;
+	
+	bool IRQ_disable=false;
+	bool FIQ_disable=false;
+	bool Thumb;
+	CPUMode mode = SVC;
+	
+	uint32_t asInt(){
+		uint32_t out=0;
+		out|=N<<31;
+		out|=Z<<30;
+		out|=C<<29;
+		out|=V<<28;
+		
+		out|=IRQ_disable<<7;
+		out|=FIQ_disable<<6;
+		out|=Thumb<<5;
+		
+		out|=mode;
+		return out;
+	}
+	
+	
+};
+ 
 
 class RegisterFile {
 	uint32_t R[37] = {0};
@@ -22,7 +53,7 @@ class RegisterFile {
 	unsigned int R15;//PC
 	
 	//unsigned int *CPSR=&R[16];
-	unsigned int *sPsR=&R[17];
+	
 	
 	unsigned int *R8_fiq=&R[18];
 	unsigned int *R9_fiq=&R[19];
@@ -51,7 +82,13 @@ class RegisterFile {
 
 	int mode = CPUMode::USER;
 	public:
-	uint32_t CPSR = 0;
+	PSR CPSR;
+	PSR SPSR;
+	PSR SPSR_fiq;
+	PSR SPSR_SVC;
+	PSR SPSR_abt;
+	PSR SPSR_irq;
+	PSR SPSR_und;
 	
 	uint32_t& operator[](int r){
 		if(mode==CPUMode::USER){
@@ -93,22 +130,9 @@ private:
 	
 public:
 	MMU mmu;
-	RegisterFile R;
-	unsigned int x=0;
-	unsigned int *CPsR=&x;
-	
+	RegisterFile R;	
 	
 	void clearFlags();
-		
-	void setZ();
-	void clearZ();
-	void setN();
-	void clearN();
-	uint8_t getC();
-	void setC();
-	void clearC();
-	void setV();
-	void clearV();
 	
 	bool condition(int cond);
 	

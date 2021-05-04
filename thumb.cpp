@@ -50,9 +50,9 @@ void CPU::executeThumb(uint16_t op){
 			//asr
 			R[Rd] = shifter(R[Rs],off5,0b10);
 		}
-		if(R[Rd]==0) setZ();
-		if(R[Rd]>>31==1) setN();
-		if(shiftCarry()==1) setC();
+		if(R[Rd]==0) R.CPSR.Z=1;
+		if(R[Rd]>>31==1) R.CPSR.N=1;
+		if(shiftCarry()==1) R.CPSR.C=1;
 		//todo:wait
 	}
 	else if((op>>13)==1){
