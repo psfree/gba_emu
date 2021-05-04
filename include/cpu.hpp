@@ -22,9 +22,10 @@ public:
 	bool C=false;
 	bool V=false;
 	
-	bool IRQ_disable=false;
-	bool FIQ_disable=false;
-	bool Thumb;
+	//reset state TODO: verify interrupts disabled on reset
+	bool IRQ_disable=true;
+	bool FIQ_disable=true;
+	bool Thumb = false;
 	CPUMode mode = SVC;
 	
 	uint32_t asInt(){
@@ -80,17 +81,21 @@ class RegisterFile {
 	unsigned int *R14_und=&R[36];
 	unsigned int *sPsR_und=&R[37];
 
-	int mode = CPUMode::USER;
 	public:
 	PSR CPSR;
-	PSR SPSR;
+	PSR SPSR_user;
 	PSR SPSR_fiq;
-	PSR SPSR_SVC;
+	PSR SPSR_svc;
 	PSR SPSR_abt;
 	PSR SPSR_irq;
 	PSR SPSR_und;
 	
+	PSR SPSR() {
+		return SPSR_user;
+	}
+	
 	uint32_t& operator[](int r){
+		uint8_t mode = CPSR.mode;
 		if(mode==CPUMode::USER){
 			return R[r];
 		}
@@ -163,4 +168,5 @@ public:
  	void ARM_LDM(uint8_t Rn, uint16_t Rlist, bool post, bool down, bool psr, 
 		bool writeback, bool store);
 	void ARM_SWP(uint8_t Rd, uint8_t Rn, uint8_t Rm, bool byte);
+	void ARM_MRS(uint8_t Rd, bool spsr);
 };

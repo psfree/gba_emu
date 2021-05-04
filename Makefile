@@ -6,7 +6,7 @@ ODIR=obj
 _DEPS = alu.hpp loguru.hpp cpu.hpp mmu.hpp
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = alu.o loguru.o cpu.o thumb.o
+_OBJ = alu.o loguru.o cpu.o thumb.o arm_ops.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.cpp $(DEPS)
