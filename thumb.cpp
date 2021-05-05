@@ -212,6 +212,10 @@ void CPU::executeThumb(uint16_t op){
 	}
 	else if((op>>12)==12){
 		//multiple ld
+		bool store = ((op>>11)&0x1)==0;
+		uint8_t Rb = ((op>>8)&0x7);
+		uint16_t Rlist = ((op)&0xff);
+		ARM_LDM(Rb, Rlist, true, false, false, false, store);
 	}
 	else if((op>>12)==13){
 		//conditional branch
