@@ -154,7 +154,9 @@ void CPU::execute(unsigned int op){
 	}
 	else if((rem&0xE000F90)==0x90){
 		//LDRH
-		bool imm = ((rem>>22)==1);
+		//TODO:double check immediates make sense
+		//TODO: immediate being flipped vs ldr can lead to confusion  
+		bool imm = ((rem>>22)&1)==1;
 		bool post = ((rem>>24)&1)==0;
 		bool down = ((rem>>23)&1)==0;
 		bool writeback = ((rem>>21)&1)==1;

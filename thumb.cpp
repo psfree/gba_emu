@@ -115,30 +115,95 @@ void CPU::executeThumb(uint16_t op){
 	}
 	else if((op>>11)==9){
 		//pc rel load
+		uint8_t Rd = (op>>8)&0x7;
+		uint8_t offset = op&0xff;
+		uint32_t R15_old=R[15];
+		//TODO: fix/verify this gross edgecase
+		if((R15_old&0x2)==2){ //word alignment from Note
+			R[15]&=0xFFFFFFFD;
+		}
+		ARM_LDR(Rd, 15, offset<<2, true, true, false,false,false,false);
+		R[15]=R15_old;
 	}
 	else if((op&0xF200)==0x5000){
 		//ld reg off
+		bool store = ((op>>11)&0x1)==0;
+		bool byte = (op>>10)&0x1;
+		uint8_t Ro = (op>>6)>0x7;
+		uint8_t Rb = (op>>3)&0x7;
+		uint8_t Rd = (op)&0x7;
+		//preindexed
+		ARM_LDR(Rd, Rb, Ro, false, false, false,byte,false, store);
 	}
 	else if((op&0xF200)==0x5200){
 		//ldh signed off
+		bool halfword = (op>>11)&0x1;
+		bool sign = (op>>10)&0x1;
+		uint8_t Ro = (op>>6)>0x7;
+		uint8_t Rb = (op>>3)&0x7;
+		uint8_t Rd = (op)&0x7;
+		if(!sign&&!halfword){
+			ARM_LDRH(Rd, Rb, Ro, false, true, false, false,true,false, true);
+		}
+		else {
+			ARM_LDRH(Rd, Rb, Ro, false, true, false,false,false, sign, halfword);
+		}
 	}
 	else if((op>>13)==3){
 		//ld imm off
+		bool byte = (op>>12)&0x1;
+		bool store = ((op>>11)&0x1)==0;
+		uint8_t off5 = (op>>6)>0x1f;
+		uint8_t Rb = (op>>3)&0x7;
+		uint8_t Rd = (op)&0x7;
+		if(!byte) off5 = off5<<2;  //TODO: verify again that shift happens here
+		ARM_LDR(Rd, Rb, off5 ,true, true, false, byte, false, store);
 	}
 	else if((op>>12)==8){
 		//ldh
+		bool store = ((op>>11)&0x1)==0;
+		uint8_t off5 = (op>>6)>0x1f;
+		uint8_t Rb = (op>>3)&0x7;
+		uint8_t Rd = (op)&0x7;
+		ARM_LDRH(Rd, Rb, off5<<1, true, false, false,false, store, false, true);
 	}
 	else if((op>>12)==9){
 		//sp  rel ld
+		bool store = ((op>>11)&0x1)==0;
+		uint8_t Rd = (op>>8)>0x7;
+		uint16_t word8 = (op)&0xff;
+		ARM_LDR(Rd, 13, word8<<2, true, false, false,false, false, store);
 	}
 	else if((op>>12)==10){
 		//ld addr
+		bool use_pc = ((op>>11)&0x1)==0;
+		uint8_t Rd = (op>>8)>0x7;
+		uint16_t word8 = (op)&0xff;
+		uint32_t Rn = 13;
+		uint32_t R15_old=R[15];
+		if(use_pc){
+			Rn=15;
+			//TODO: better way to force PC bit[1] to read zero
+			if((R15_old&0x2)==2){ //word alignment from Note
+				R[15]&=0xFFFFFFFD;
+			}
+		}
+		//weirdly have to rotate right by 30 to shift 8 bit value to 10 bits
+		ARM_DataProcessing(ADD, Rd, Rn, word8|0xf00, true, false);
+		R[15]=R15_old;
 	}
 	else if((op>>8)==0xB0){
 		//add to sp
+		bool neg = ((op>>7)&0x1)==1;
+		uint32_t sword7 = ((op)&0xff)<<2;
+		if(neg)	sword7=-sword7;
+		ARM_DataProcessing(ADD, 13, 13, sword7, true, false);
 	}
 	else if((op&0xF600)==0xB400){
 		//push/pop
+		bool store = ((op>>11)&0x1)==0;
+		bool store_pclr = ((op>>8)&0x1)==1;
+		uint32_t sword7 = ((op)&0xff)<<2;
 	}
 	else if((op>>12)==12){
 		//multiple ld
