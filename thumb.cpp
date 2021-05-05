@@ -10,25 +10,10 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t Rn_off = ((op&0x1c0)>>6);
 		uint8_t Rs = ((op&0x38)>>3);
 		uint8_t Rd = ((op&7));
-		uint32_t rem=0;
 		
-		if(sub){
-			rem=0x500000;
-		}
-		else {
-			rem =0x900000;
-		}
-		rem|=Rs<<16;
-		rem|=Rd<<12;
-		if(!imm){
-			rem|=Rn_off;
-		}
-		else{
-			rem|=0x2000000;
-			rem|=Rn_off;
-		}
-		
-		//dataProcessing(rem);
+		uint8_t opcode = sub ? 2 : 4;
+		uint32_t operand2 =0;
+		ARM_DataProcessing(opcode, Rd, Rs, Rn_off, imm, true);
 	}
 	else if((op>>13)==0) {
 		//Msr
@@ -37,26 +22,26 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t off5 = (op&0x7C0)>>5;
 		uint8_t Rs = (op&0x38)>>3;
 		uint8_t Rd = (op&7);
-		if(subop==0){
-			//lsl
-			R[Rd] = shifter(R[Rs],off5,0b00);
-			
-		}
-		else if(subop==1){
-			//lsr
-			R[Rd] = shifter(R[Rs],off5,0b01);
-		}
-		else if(subop==2){
-			//asr
-			R[Rd] = shifter(R[Rs],off5,0b10);
-		}
-		if(R[Rd]==0) R.CPSR.Z=1;
-		if(R[Rd]>>31==1) R.CPSR.N=1;
-		if(shiftCarry()==1) R.CPSR.C=1;
+		
+		uint16_t shiftCode = Rs;
+		shiftCode|= subop<<5;
+		shiftCode|= off5<<7;
+		
+		ARM_DataProcessing(0b1101, Rd, 0, shiftCode, false, true);
 		//todo:wait
 	}
 	else if((op>>13)==1){
+		uint8_t subop = (op&0x1800)>>11;
+		uint8_t Rd = (op>>5)&7;
+		uint8_t off8 = (op&0xff);
 		//move/cmp imm
+		uint8_t opcode =0;
+		if(subop==0) opcode = 0b1101; //MOV
+		else if(subop==1) opcode=0b1010; //CMP
+		else if(subop==2) opcode=0b0100; //ADD
+		else opcode=0b0010; //sub
+		
+		ARM_DataProcessing(opcode, Rd, Rd, off8, true, true);
 	}
 	else if((op>>10)==16){
 		//alu

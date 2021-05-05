@@ -268,6 +268,9 @@ int main(int argc, char* argv[]){
 	CPU cpu;
 	string in;
 	cpu.R.CPSR.Z=1;
+	cpu.R[0]=0x0a0b0c0d;
+	cpu.ARM_MSR_REG(0,0);
+	cpu.ARM_MRS(1,0);
 	while(getline(cin,in)) {
 		//00005EE3
 		long x = stol(in, nullptr,16);
