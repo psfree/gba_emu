@@ -203,7 +203,12 @@ void CPU::executeThumb(uint16_t op){
 		//push/pop
 		bool store = ((op>>11)&0x1)==0;
 		bool store_pclr = ((op>>8)&0x1)==1;
-		uint32_t sword7 = ((op)&0xff)<<2;
+		uint16_t Rlist = ((op)&0xff);
+		if(store_pclr) {
+			if(store) Rlist|=0x4000; //store LR
+			else Rlist|=0x8000;   //pop PC
+		}
+		ARM_LDM(13,  Rlist, !store, store, false, true, store);
 	}
 	else if((op>>12)==12){
 		//multiple ld
