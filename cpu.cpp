@@ -203,12 +203,15 @@ void CPU::execute(unsigned int op){
 	else if((rem&0xF000010)==0xE000000){
 		//cdp
 		//Not required (unless im mistaken)
+		trap();
 	}
 	else if((rem&0xE000000)==0xC000000){
 		//LDC
+		trap();
 	}
 	else if((rem&0xF000010)==0xE000010){
 		//MRC
+		trap();
 	}
 	else if((rem&0xFBF0FFF)==0x10F0000) { //MRs
 		bool spsr = ((rem>>22)&1)==1;

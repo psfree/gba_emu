@@ -1,108 +1,108 @@
 #include "cpu.hpp"
-using namespace ALU;
+
 void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t operand2,
 		 bool imm, bool setcond) {
-		//TODO: MRs, R15 handling, other special cases
+	//TODO: MRs, R15 handling, other special cases
 
-		if(Rd==15) { 
-			swait++;
-			nwait++;
-		}
-		//TODO:might wish to pull out shifting to make THUMB mapping easier
-		//i.e. use value instead of operand2 as argument
-		int flagsOut=0;
-		unsigned int value = 0;
-		if(imm){
-			value = shifter(operand2&0xff,(operand2>>8)*2, 0b11 );
-		}
-		else {
-			value = handleshift(operand2);
-		}
-		//TODO: 4.5.4, r15 handling, TsT
-		int tst = 0;
-		bool logical = false;
-		bool test = false;
-		switch(opcode) {
-			case 0b0000: //AND
-				logical = true;
-				R[Rd]= R[Rn]&value;
-				break;
-			case 0b0001: //EOR/XOR
-				logical = true;
-				R[Rd]= R[Rn]^value;
-				break;
-			case 0b0010: //sub
-				R[Rd] = ADD(R[Rn],-value);
-				break;
-			case 0b0011://rsb
-				R[Rd] = ADD(value,-R[Rn]);
-				break;
-			case 0b0100: //ADD
-				R[Rd] = ADD(R[Rn],value);
-				break;
-			case 0b0101: //ADC
-				R[Rd] = ADD(R[Rn], value+R.CPSR.C);
-				break;
-			case 0b0110: //sbc
-				R[Rd] = ADD(R[Rn], -value+R.CPSR.C-1);
-				break;
-			case 0b0111: //rsc
-				R[Rd] = ADD(value,-R[Rn]+R.CPSR.C-1);
-				break;
-			case 0b1000: //tst
-				logical = test = true;
-				tst = R[Rn]&value;
-				break;
-			case 0b1001: //TEQ
-				logical = test= true;
-				tst = R[Rn]^value;
-				break;
-			case 0b1010: //CMP
-				logical = test = true;
-				tst = R[Rn]-value;
-				break;
-			case 0b1011: //CMN
-				logical = tst =true;
-				tst = R[Rn]+value;
-				break;
-			case 0b1100://ORR
-				logical = true;
-				R[Rd] = R[Rn]|value;
-				break;
-			case 0b1101: //MOV
-				R[Rd] = value;
-				break;
-			case 0b1110: //BIC
-				logical = true;
-				R[Rd] = R[Rn]&(~value);
-				break;
-			case 0b1111: //MVN
-				logical = true;
-				R[Rd] = ~value;
-				break;
-			default:
-				trap();
-		}
-		if(setcond) { //TODO:check Rd!=R15
-			clearFlags();
-			if(logical){
-				if(test) {
-					if(tst==0) R.CPSR.Z=1;
-					if(tst>>31==1) R.CPSR.N=1;
-				}else {
-					if(R[Rd]==0) R.CPSR.Z=1;
-					if(R[Rd]>>31==1) R.CPSR.N=1;
-				}
-				if(shiftCarry()==1) R.CPSR.Z=1;
-			}
-			else{
-				if(aluOverflow()==1) R.CPSR.V=1; //TODO: make sure this is valid
-				if(aluCarry()==1) R.CPSR.C=1;
+	if(Rd==15) { 
+		swait++;
+		nwait++;
+	}
+	//TODO:might wish to pull out shifting to make THUMB mapping easier
+	//i.e. use value instead of operand2 as argument
+	int flagsOut=0;
+	unsigned int value = 0;
+	if(imm){
+		value = ALU::shifter(operand2&0xff,(operand2>>8)*2, 0b11 );
+	}
+	else {
+		value = handleshift(operand2);
+	}
+	//TODO: 4.5.4, r15 handling, TsT
+	int tst = 0;
+	bool logical = false;
+	bool test = false;
+	switch(opcode) {
+		case AND:
+			logical = true;
+			R[Rd]= R[Rn]&value;
+			break;
+		case EOR: //EOR/XOR
+			logical = true;
+			R[Rd]= R[Rn]^value;
+			break;
+		case SUB: //sub
+			R[Rd] = ALU::ADD(R[Rn],-value);
+			break;
+		case RSB://rsb
+			R[Rd] = ALU::ADD(value,-R[Rn]);
+			break;
+		case ADD: //ADD
+			R[Rd] = ALU::ADD(R[Rn],value);
+			break;
+		case ADC: //ADC
+			R[Rd] = ALU::ADD(R[Rn], value+R.CPSR.C);
+			break;
+		case SBC: //sbc
+			R[Rd] = ALU::ADD(R[Rn], -value+R.CPSR.C-1);
+			break;
+		case RSC: //rsc
+			R[Rd] = ALU::ADD(value,-R[Rn]+R.CPSR.C-1);
+			break;
+		case TST: //tst
+			logical = test = true;
+			tst = R[Rn]&value;
+			break;
+		case TEQ: //TEQ
+			logical = test= true;
+			tst = R[Rn]^value;
+			break;
+		case CMP: //CMP
+			logical = test = true;
+			tst = R[Rn]-value;
+			break;
+		case CMN: //CMN
+			logical = tst =true;
+			tst = R[Rn]+value;
+			break;
+		case ORR://ORR
+			logical = true;
+			R[Rd] = R[Rn]|value;
+			break;
+		case MOV: //MOV
+			R[Rd] = value;
+			break;
+		case BIC: //BIC
+			logical = true;
+			R[Rd] = R[Rn]&(~value);
+			break;
+		case MVN: //MVN
+			logical = true;
+			R[Rd] = ~value;
+			break;
+		default:
+			trap();
+	}
+	if(setcond) { //TODO:check Rd!=R15
+		clearFlags();
+		if(logical){
+			if(test) {
+				if(tst==0) R.CPSR.Z=1;
+				if(tst>>31==1) R.CPSR.N=1;
+			}else {
 				if(R[Rd]==0) R.CPSR.Z=1;
-				if((R[Rd]>>31)==1) R.CPSR.N=1;
-				
+				if(R[Rd]>>31==1) R.CPSR.N=1;
 			}
+			if(ALU::shiftCarry()==1) R.CPSR.Z=1;
 		}
+		else{
+			if(ALU::aluOverflow()==1) R.CPSR.V=1; //TODO: make sure this is valid
+			if(ALU::aluCarry()==1) R.CPSR.C=1;
+			if(R[Rd]==0) R.CPSR.Z=1;
+			if((R[Rd]>>31)==1) R.CPSR.N=1;
+			
+		}
+	}
 }
 
 void CPU::ARM_BX(uint8_t Rn){
@@ -202,9 +202,8 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
 		else {
 			//rotate misaligned addresses into register
 			uint8_t rotate = (ld_addr&0x3)*8;
-			R[Rd] = rotr32(mmu.getWord(ld_addr),rotate);
+			R[Rd] = ALU::rotr32(mmu.getWord(ld_addr),rotate);
 		}
-		
 	}
 	
 	if(store) {
@@ -222,47 +221,47 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
  
  void CPU::ARM_LDRH(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, bool down, 
  	bool writeback, bool store, bool sign, bool halfwords) {
-		uint32_t ld_addr=0;
-		if(post){
-			ld_addr=R[Rn];
-			R[Rn]+=off;
-			if(writeback){
-				//do nothing
-			}
+	uint32_t ld_addr=0;
+	if(post){
+		ld_addr=R[Rn];
+		R[Rn]+=off;
+		if(writeback){
+			//do nothing
+		}
+	}
+	else {
+		ld_addr=R[Rn]+off;
+		if(writeback) R[Rn]=ld_addr;
+	}
+
+	if(halfwords){
+		if(store) {
+			if(sign) trap();
+			uint8_t pc=0;
+			if(Rd==15) pc=12;
+			mmu.setHalf(ld_addr, R[Rd]+pc);
+	
 		}
 		else {
-			ld_addr=R[Rn]+off;
-			if(writeback) R[Rn]=ld_addr;
-		}
-	
-		if(halfwords){
-			if(store) {
-				if(sign) trap();
-				uint8_t pc=0;
-				if(Rd==15) pc=12;
-				mmu.setHalf(ld_addr, R[Rd]+pc);
-		
-			}
-			else {
-				R[Rd] = mmu.getHalf(ld_addr);
-				if(sign){
-					if(R[Rd]>>7 == 1) R[Rd]|=0xffffff00;
-				}
-			}
-		}
-		else{
+			R[Rd] = mmu.getHalf(ld_addr);
 			if(sign){
-				if(store) trap(); //no signed stores;
-				R[Rd] = mmu.getByte(ld_addr);
 				if(R[Rd]>>7 == 1) R[Rd]|=0xffffff00;
 			}
-			else {
-				//swp? probably need to decode swp first to prevent this
-			}
-	
 		}
-		swait=nwait=iwait=1;
-		if(Rd==15) swait=nwait=2;
+	}
+	else{
+		if(sign){
+			if(store) trap(); //no signed stores;
+			R[Rd] = mmu.getByte(ld_addr);
+			if(R[Rd]>>7 == 1) R[Rd]|=0xffffff00;
+		}
+		else {
+			//swp? probably need to decode swp first to prevent this
+		}
+
+	}
+	swait=nwait=iwait=1;
+	if(Rd==15) swait=nwait=2;
  }
 
 void CPU::ARM_LDM(uint8_t Rn, uint16_t Rlist, bool post, bool down, bool psr, 
@@ -373,7 +372,7 @@ void CPU::ARM_MSR_REG(uint8_t Rm, bool spsr){
 void CPU::ARM_MSR_IMM(uint16_t operand2, bool spsr, bool imm){
 	uint32_t value = 0;
 	if(imm){
-		value = shifter(operand2&0xff,(operand2>>8)*2, 0b11 );
+		value = ALU::shifter(operand2&0xff,(operand2>>8)*2, 0b11 );
 	}
 	else {
 		value = handleshift(operand2);

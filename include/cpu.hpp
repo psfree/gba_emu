@@ -15,6 +15,25 @@ enum CPUMode{
 	SYS = 0b11111
 };
 
+enum DataOps{
+	AND,
+	EOR,
+	SUB,
+	RSB,
+	ADD,
+	ADC,
+	SBC,
+	RSC,
+	TST,
+	TEQ,
+	CMP,
+	CMN,
+	ORR,
+	MOV,
+	BIC,
+	MVN
+};
+
 class PSR {
 public:
 	bool N=false;
