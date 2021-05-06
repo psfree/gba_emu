@@ -2,8 +2,6 @@
 
 void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t operand2,
 		 bool imm, bool setcond) {
-	//TODO: MRs, R15 handling, other special cases
-
 	if(Rd==15) { 
 		swait++;
 		nwait++;
@@ -18,7 +16,6 @@ void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t 
 	else {
 		value = handleshift(operand2);
 	}
-	//TODO: 4.5.4, r15 handling, TsT
 	int tst = 0;
 	bool logical = false;
 	bool test = false;
@@ -83,8 +80,13 @@ void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t 
 		default:
 			trap();
 	}
-	if(setcond) { //TODO:check Rd!=R15
+	if(setcond) { 
 		clearFlags();
+		if(Rd==15){
+			//handle Special caSe for atomic change
+			R.CPSR=R.SPSR();
+			return;
+		}
 		if(logical){
 			if(test) {
 				if(tst==0) R.CPSR.Z=1;

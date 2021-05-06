@@ -84,22 +84,26 @@ uint32_t CPU::multCycles(int op2){
 
 
 uint32_t CPU::handleshift(uint32_t operand2){
+	//TODO: disable prefetch if pipeline not used
 	uint32_t value=0;
 	uint32_t shift = (operand2&0xff0)>>4;
 	uint32_t Rm = operand2&0xf;
+	uint8_t PC_prefetch=0;
 	
 	uint32_t shiftType=(shift>>1)&3;
 	uint32_t shiftAmount=0;
 	if((shift&1)==1){
 		//shift from register
+		if(Rm==15) PC_prefetch=12;
 		uint32_t Rs = (shift&0xf0)>>4;
 		shiftAmount = R[Rs]&0xff;
-		value = shifter(R[Rm], shiftAmount,shiftType);
+		value = shifter(R[Rm]+PC_prefetch, shiftAmount,shiftType);
 		iwait++;
 	}
 	else{
+		if(Rm==15) PC_prefetch=8;
 		shiftAmount = shift>>3;
-		value = shifter(R[Rm], shiftAmount,shiftType);
+		value = shifter(R[Rm]+PC_prefetch, shiftAmount,shiftType);
 	}
 	return value;
 } 
