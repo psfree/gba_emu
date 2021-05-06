@@ -222,7 +222,7 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t cond = ((op>>8)&0xf);
 		//TODO: doesnt make much sense to me but it seems its lsl#1, +4 (for PC?)
 		//also signing
-		uint16_t soffset8 = ((op)&0xff)<<1 + 4;
+		uint16_t soffset8 = (((op)&0xff)<<1) + 4;
 		if(!condition(cond)) return;
 		ARM_BL(soffset8, false);
 	}
@@ -241,10 +241,10 @@ void CPU::executeThumb(uint16_t op){
 		uint32_t offset = ((op)&0x7ff);
 		if(off_low){
 			uint32_t temp=R[15]+4;//TODO: get actual next address
-			R[15]=R[14]+offset<<1;
+			R[15]=R[14]+(offset<<1);
 			R[14]=temp|1;
 		}
-		else R[14]=R[15]+offset<<12;
+		else R[14]=R[15]+(offset<<12);
 	}
 	
 
