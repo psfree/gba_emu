@@ -107,13 +107,20 @@ void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t 
 
 void CPU::ARM_BX(uint8_t Rn){
 	R[15]=R[Rn];
+	R.CPSR.Thumb = R[Rn]&1;
 	swait=2;
 	nwait=1;
 }
 
 void CPU::ARM_BL(uint32_t off, bool link){
 	if(link){
-		R[14]=R[15];
+		R[14]=R[15]+4; //TODO: properly get PC accounting for prefetch
+		R[14]&=0xfffffffc; //clearing r14[1:0]
+	}
+	off=off<<2;
+	//sign extend
+	if(off&0x2000000){
+		off|=0xFE000000;
 	}
 	R[15]+=off;
 	swait=2;

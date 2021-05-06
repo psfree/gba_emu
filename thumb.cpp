@@ -219,15 +219,32 @@ void CPU::executeThumb(uint16_t op){
 	}
 	else if((op>>12)==13){
 		//conditional branch
+		uint8_t cond = ((op>>8)&0xf);
+		//TODO: doesnt make much sense to me but it seems its lsl#1, +4 (for PC?)
+		//also signing
+		uint16_t soffset8 = ((op)&0xff)<<1 + 4;
+		if(!condition(cond)) return;
+		ARM_BL(soffset8, false);
 	}
-	else if((op>>8)==0xDF){
+	else if((op>>8)==0xDF){//todo: put before cond branch
 		//swi
 	}
 	else if((op>>5)==0x1c){
 		//unconditional branch
+		uint16_t offset11 = ((op)&0x7ff);
+		//BAL?
+		ARM_BL(offset11<<1, true);
 	}
 	else if((op>>8)==0xf){
 		//long link w branch
+		bool off_low = ((op>>11)&0x1)==1;
+		uint32_t offset = ((op)&0x7ff);
+		if(off_low){
+			uint32_t temp=R[15]+4;//TODO: get actual next address
+			R[15]=R[14]+offset<<1;
+			R[14]=temp|1;
+		}
+		else R[14]=R[15]+offset<<12;
 	}
 	
 

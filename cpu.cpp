@@ -259,6 +259,20 @@ void CPU::execute(unsigned int op){
 
 }
 
+void fetch() {
+
+}
+
+void decode() {
+
+}
+
+void exec() {
+}
+
+void pipelineFlush(){
+}
+
 void CPU::trap(){
 	int*x=NULL;
 	*x++;
