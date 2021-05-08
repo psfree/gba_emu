@@ -162,7 +162,7 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t Rb = (op>>3)&0x7;
 		uint8_t Rd = (op)&0x7;
 		if(!byte) off5 = off5<<2;  //TODO: verify again that shift happens here
-		ARM_LDR(Rd, Rb, off5 ,true, true, false, byte, false, store);
+		ARM_LDR(Rd, Rb, off5 ,true, false, false, byte, false, store);
 	}
 	else if((op>>12)==8){
 		//ldh
