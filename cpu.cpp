@@ -394,7 +394,11 @@ void testThumb_f7(CPU cpu){
 	cpu.R[3]=0xaabbccdd;
 	cpu.executeThumb(0x5193);
 	assert(cpu.mmu.getWord(100)==0xaabbccdd);
-
+	//LDRB  R2, [R0,R7]
+	cpu.R[0]=50;
+	cpu.R[7]=51;
+	cpu.executeThumb(0x5DC2);
+	assert(cpu.R[2]==0xcc);
 }
 void testThumb_f8(CPU cpu){
 }
