@@ -469,6 +469,24 @@ void testThumb_f13(CPU cpu){
 	assert(cpu.R[13]==4);
 }
 void testThumb_f14(CPU cpu){
+	//PUSH  {R0-R4,LR}
+	cpu.R[13]=100;
+	cpu.R[0]=0;
+	cpu.R[1]=1;
+	cpu.R[2]=2;
+	cpu.R[3]=3;
+	cpu.R[4]=4;
+	cpu.R[14]=14;
+	cpu.executeThumb(0xB51F);
+	//POP  {R0-R4,PC}
+	cpu.R[0]=cpu.R[1]=cpu.R[2]=cpu.R[3]=cpu.R[4]=cpu.R[14]=0;
+	cpu.executeThumb(0xBD1F);
+	assert(cpu.R[15]==14);
+	assert(cpu.R[0]==0);
+	assert(cpu.R[1]==1);
+	assert(cpu.R[2]==2);
+	assert(cpu.R[3]==3);
+	assert(cpu.R[4]==4);
 }
 void testThumb_f15(CPU cpu){
 }
