@@ -489,6 +489,19 @@ void testThumb_f14(CPU cpu){
 	assert(cpu.R[4]==4);
 }
 void testThumb_f15(CPU cpu){
+	//STMIA R0!, {R3-R7}
+	cpu.R[0]=100;
+	cpu.R[3]=3;
+	cpu.R[4]=4;
+	cpu.R[5]=5;
+	cpu.R[6]=6;
+	cpu.R[7]=7;
+	cpu.executeThumb(0xC0F8);
+	assert(cpu.mmu.getWord(cpu.R[0]-4)==7);
+	assert(cpu.mmu.getWord(cpu.R[0]-8)==6);
+	assert(cpu.mmu.getWord(cpu.R[0]-12)==5);
+	assert(cpu.mmu.getWord(cpu.R[0]-16)==4);
+	assert(cpu.mmu.getWord(cpu.R[0]-20)==3);
 }
 
 void testThumb(CPU cpu){
