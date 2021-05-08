@@ -98,6 +98,10 @@ void CPU::executeThumb(uint16_t op){
 		if(H1) Rd+=8;
 		if(H2) Rs+=8;
 		
+		if(Rs==15||Rd==15){
+			//TODO: value shall be adr of current instruction+4, bit0 clear
+		}
+		
 		if(subop==0){
 			ARM_DataProcessing(ADD, Rd, Rd, Rs, false, false);
 		}
@@ -117,18 +121,19 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t Rd = (op>>8)&0x7;
 		uint8_t offset = op&0xff;
 		uint32_t R15_old=R[15];
-		//TODO: fix/verify this gross edgecase
+		//TODO: PC will be 4 bytes greater than the address of this instruction, 
+		//but bit 1 of the PC is forced to 0
 		if((R15_old&0x2)==2){ //word alignment from Note
 			R[15]&=0xFFFFFFFD;
 		}
-		ARM_LDR(Rd, 15, offset<<2, true, true, false,false,false,false);
+		ARM_LDR(Rd, 15, offset<<2, true, false, false,false,false,false);
 		R[15]=R15_old;
 	}
 	else if((op&0xF200)==0x5000){
 		//ld reg off
 		bool store = ((op>>11)&0x1)==0;
 		bool byte = (op>>10)&0x1;
-		uint8_t Ro = (op>>6)>0x7;
+		uint8_t Ro = (op>>6)&0x7;
 		uint8_t Rb = (op>>3)&0x7;
 		uint8_t Rd = (op)&0x7;
 		//preindexed
@@ -138,7 +143,7 @@ void CPU::executeThumb(uint16_t op){
 		//ldh signed off
 		bool halfword = (op>>11)&0x1;
 		bool sign = (op>>10)&0x1;
-		uint8_t Ro = (op>>6)>0x7;
+		uint8_t Ro = (op>>6)&0x7;
 		uint8_t Rb = (op>>3)&0x7;
 		uint8_t Rd = (op)&0x7;
 		if(!sign&&!halfword){
@@ -152,7 +157,7 @@ void CPU::executeThumb(uint16_t op){
 		//ld imm off
 		bool byte = (op>>12)&0x1;
 		bool store = ((op>>11)&0x1)==0;
-		uint8_t off5 = (op>>6)>0x1f;
+		uint8_t off5 = (op>>6)&0x1f;
 		uint8_t Rb = (op>>3)&0x7;
 		uint8_t Rd = (op)&0x7;
 		if(!byte) off5 = off5<<2;  //TODO: verify again that shift happens here
@@ -161,7 +166,7 @@ void CPU::executeThumb(uint16_t op){
 	else if((op>>12)==8){
 		//ldh
 		bool store = ((op>>11)&0x1)==0;
-		uint8_t off5 = (op>>6)>0x1f;
+		uint8_t off5 = (op>>6)&0x1f;
 		uint8_t Rb = (op>>3)&0x7;
 		uint8_t Rd = (op)&0x7;
 		ARM_LDRH(Rd, Rb, off5<<1, true, false, false,false, store, false, true);
@@ -169,14 +174,14 @@ void CPU::executeThumb(uint16_t op){
 	else if((op>>12)==9){
 		//sp  rel ld
 		bool store = ((op>>11)&0x1)==0;
-		uint8_t Rd = (op>>8)>0x7;
+		uint8_t Rd = (op>>8)&0x7;
 		uint16_t word8 = (op)&0xff;
 		ARM_LDR(Rd, 13, word8<<2, true, false, false,false, false, store);
 	}
 	else if((op>>12)==10){
 		//ld addr
 		bool use_pc = ((op>>11)&0x1)==0;
-		uint8_t Rd = (op>>8)>0x7;
+		uint8_t Rd = (op>>8)&0x7;
 		uint16_t word8 = (op)&0xff;
 		uint32_t Rn = 13;
 		uint32_t R15_old=R[15];
