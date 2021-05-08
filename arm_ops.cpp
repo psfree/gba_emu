@@ -267,7 +267,7 @@ void CPU::ARM_LDR(uint8_t Rd, uint8_t Rn, uint32_t off, bool imm, bool post, boo
 		else {
 			R[Rd] = mmu.getHalf(ld_addr);
 			if(sign){
-				if(R[Rd]>>7 == 1) R[Rd]|=0xffffff00;
+				if(R[Rd]>>15 == 1) R[Rd]|=0xffff0000;
 			}
 		}
 	}

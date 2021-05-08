@@ -147,10 +147,11 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t Rb = (op>>3)&0x7;
 		uint8_t Rd = (op)&0x7;
 		if(!sign&&!halfword){
-			ARM_LDRH(Rd, Rb, Ro, false, true, false, false,true,false, true);
+			//strh
+			ARM_LDRH(Rd, Rb, R[Ro], false, false, false, false,true,false, true);
 		}
 		else {
-			ARM_LDRH(Rd, Rb, Ro, false, true, false,false,false, sign, halfword);
+			ARM_LDRH(Rd, Rb, R[Ro], false, false, false,false,false, sign, halfword);
 		}
 	}
 	else if((op>>13)==3){
