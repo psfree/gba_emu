@@ -346,16 +346,50 @@ void testThumb_f4(CPU cpu){
 	cpu.executeThumb(0x4263);
 	assert(cpu.R[3]==-5);
 	
+	cpu.R[3]=6;
+	cpu.R[4]=6;
+	//CMP R3, R4
+	cpu.executeThumb(0x42A3);
+	assert(cpu.R.CPSR.Z==1);
+	
+	cpu.R[3]=6;
+	cpu.R[4]=9;
+	//MUL R3, R4
+	cpu.executeThumb(0x4363);
+	assert(cpu.R[3]==54);
 	
 }
 void testThumb_f5(CPU cpu){
+	//hi register operation
+	cpu.R[15]=12;
+	cpu.R[5]=8;
+	//ADD PC, R5
+	cpu.executeThumb(0x44AF);
+	assert(cpu.R[15]==20);
+	
+	cpu.R[4]=12;
+	cpu.R[12]=12;
+	//CMP R4, R12
+	cpu.executeThumb(0x4564);
+	assert(cpu.R.CPSR.Z==1);
+	
+	//MOV R15, R14
+	cpu.R[14]=98;
+	cpu.executeThumb(0x46F7);
+	assert(cpu.R[15]==98);
+
+
 }
+
+void testThumb_f6(CPU cpu){
+}
+
 
 void testThumb(CPU cpu){
 	testThumb_f2(cpu);
 	testThumb_f3(cpu);
 	testThumb_f4(cpu);
-	
+	testThumb_f5(cpu);
 }
 
 int main(int argc, char* argv[]){

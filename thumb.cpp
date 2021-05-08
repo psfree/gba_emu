@@ -82,6 +82,9 @@ void CPU::executeThumb(uint16_t op){
 			opcode = RSB;
 			ARM_DataProcessing(opcode, Rd, Rs, 0, true, true);
 		}
+		else if(subop==0b1101) { //mul
+			ARM_MUL(Rd, Rs, Rd, 0, false, true);
+		}
 		else ARM_DataProcessing(opcode, Rd, Rd, op2, false, true);
 	}
 	else if((op>>10)==17){
@@ -89,11 +92,11 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t subop = (op>>8)&0x3;
 		bool H1 = (op>>7)&0x1;
 		bool H2 = (op>>6)&0x1;
-		uint8_t Rs = (op>>3)>0x7;
+		uint8_t Rs = (op>>3)&0x7;
 		uint8_t Rd = op&0x7;
 		
-		if(H1) Rs+=8;
-		if(H2) Rd+=8;
+		if(H1) Rd+=8;
+		if(H2) Rs+=8;
 		
 		if(subop==0){
 			ARM_DataProcessing(ADD, Rd, Rd, Rs, false, false);
