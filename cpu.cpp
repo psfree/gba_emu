@@ -449,6 +449,14 @@ void testThumb_f11(CPU cpu){
 }
 
 void testThumb_f12(CPU cpu){
+	//ADD   R2, PC, #572
+	cpu.R[15]=33;
+	cpu.executeThumb(0xA28F);
+	assert(cpu.R[2]==605);
+	//ADD   R6, SP, #212
+	cpu.R[13]=33;
+	cpu.executeThumb(0xAE35);
+	assert(cpu.R[6]==245);
 	
 }
 void testThumb_f13(CPU cpu){
