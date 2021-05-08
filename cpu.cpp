@@ -429,6 +429,16 @@ void testThumb_f9(CPU cpu){
 	assert(cpu.mmu.getByte(16)==0xfe);
 }
 void testThumb_f10(CPU cpu){
+	//STRH R6, [R1, #56]
+	cpu.R[1]=4;
+	cpu.R[6]=0xDDCC;
+	cpu.executeThumb(0x870E);
+	assert(cpu.mmu.getHalf(60)==0xDDCC);
+	//LDRH R4, [R7, #4]
+	cpu.R[7]=56;
+	cpu.executeThumb(0x88BC);
+	assert(cpu.R[4]==0xDDCC);
+	
 }
 void testThumb_f11(CPU cpu){
 }
