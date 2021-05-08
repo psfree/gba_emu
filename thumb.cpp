@@ -200,9 +200,8 @@ void CPU::executeThumb(uint16_t op){
 	else if((op>>8)==0xB0){
 		//add to sp
 		bool neg = ((op>>7)&0x1)==1;
-		uint32_t sword7 = ((op)&0xff)<<2;
-		if(neg)	sword7=-sword7;
-		ARM_DataProcessing(ADD, 13, 13, sword7, true, false);
+		uint32_t sword7 = ((op)&0x7f);
+		ARM_DataProcessing(neg? SUB : ADD, 13, 13, sword7|0xf00, true, false);
 	}
 	else if((op&0xF600)==0xB400){
 		//push/pop
