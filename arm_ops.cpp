@@ -1,5 +1,18 @@
 #include "cpu.hpp"
 
+class ARM_OP{
+	virtual void execute();
+};
+/*
+class ARM_BX{
+	ARM_BX(uint8_t Rn){
+		R[15]=R[Rn];
+		R.CPSR.Thumb = R[Rn]&1;
+		swait=2;
+		nwait=1;
+	}
+}*/
+
 void CPU::ARM_DataProcessing(uint8_t opcode, uint32_t Rd, uint32_t Rn, uint32_t operand2,
 		 bool imm, bool setcond) {
 	if(Rd==15) { 

@@ -3,7 +3,7 @@
 
 void CPU::executeThumb(uint16_t op){
 	if((op>>11)==3){
-		//ADD - fully validated
+		//ADD
 		bool imm = ((op&0x400)>>10)==1;
 		bool sub = ((op>>9)&1)==1;
 		uint8_t Rn_off = ((op&0x1c0)>>6);
@@ -16,7 +16,7 @@ void CPU::executeThumb(uint16_t op){
 	}
 	else if((op>>13)==0) {
 		//Msr
-		
+		//checked
 		uint8_t subop = (op&0x1800)>>11;
 		uint8_t off5 = (op&0x7C0)>>5;
 		uint8_t Rs = (op&0x38)>>3;
@@ -32,7 +32,7 @@ void CPU::executeThumb(uint16_t op){
 	else if((op>>13)==1){
 		//move/cmp imm
 		uint8_t subop = (op&0x1800)>>11;
-		uint8_t Rd = (op>>5)&7;
+		uint8_t Rd = (op>>8)&7;
 		uint8_t off8 = (op&0xff);
 		uint8_t opcode =0;
 		if(subop==0) opcode = MOV; //MOV
@@ -52,27 +52,27 @@ void CPU::executeThumb(uint16_t op){
 		uint32_t op2=Rs;
 		if(subop==0b0010) { //Lsl
 			opcode = MOV;
-			opcode = Rd;
+			op2=Rd;
 			op2|=1<<4;
 			op2|=Rs<<8;
 		}
 		if(subop==0b0011) { //Lsr
 			opcode = MOV;
-			opcode = Rd;
+			op2=Rd;
 			op2|=1<<4;
 			op2|=0b01<<5;
 			op2|=Rs<<8;
 		}
 		if(subop==0b0100) { //asr
 			opcode = MOV;
-			opcode = Rd;
+			op2=Rd;
 			op2|=1<<4;
 			op2|=0b10<<5;
 			op2|=Rs<<8;
 		}
 		if(subop==0b0111) { //ror
 			opcode = MOV;
-			opcode = Rd;
+			op2=Rd;
 			op2|=1<<4;
 			op2|=0b11<<5;
 			op2|=Rs<<8;
@@ -80,11 +80,7 @@ void CPU::executeThumb(uint16_t op){
 		
 		if(subop==0b1001) { //neg
 			opcode = RSB;
-			opcode = Rd;
-			op2|=1<<4;
-			op2|=0b11<<5;
-			op2|=Rs<<8;
-			ARM_DataProcessing(opcode, Rd, Rd, 0, true, true);
+			ARM_DataProcessing(opcode, Rd, Rs, 0, true, true);
 		}
 		else ARM_DataProcessing(opcode, Rd, Rd, op2, false, true);
 	}

@@ -263,19 +263,22 @@ void CPU::execute(unsigned int op){
 
 }
 
+/*
+uint32_t ops[2]={0};
 void fetch() {
-
+	ops[0]=ops[1];
+	ops[1]=mmu.getWord(R[15]);
 }
 
 void decode() {
-
+	execute(ops[0]);
 }
 
 void exec() {
 }
 
 void pipelineFlush(){
-}
+}*/
 
 void CPU::trap(){
 	int*x=NULL;
@@ -283,6 +286,77 @@ void CPU::trap(){
 }
 
 #include <cstdlib>
+#include <assert.h>
+
+void testThumb_f2(CPU cpu){
+	cpu.R[3]=-1;
+	cpu.R[4]=55;
+	cpu.R.CPSR.Z=1;
+	//ADD R0, R3, R4
+	cpu.executeThumb(0x18E0);
+	assert(cpu.R[0]==54);
+	
+	cpu.R[2]=99;
+	cpu.R.CPSR.Z=1;
+	//SUB R6, R2, #6
+	cpu.executeThumb(0x1F96);
+	assert(cpu.R[6]==93);
+}
+void testThumb_f3(CPU cpu){
+	cpu.R.CPSR.Z=1;
+	//MOV   R0, #128
+	cpu.executeThumb(0x2080);
+	assert(cpu.R[0]==128);
+	
+	cpu.R[2]=62;
+	cpu.R.CPSR.Z=0;
+	//CMP   R2, #62
+	cpu.executeThumb(0x2A3E);
+	assert(cpu.R.CPSR.Z==1);
+	cpu.R[2]=61;
+	cpu.executeThumb(0x2A3E);
+	assert(cpu.R.CPSR.Z==0);
+	
+	cpu.R[1]=9000;
+	//ADD   R1, #255
+	cpu.executeThumb(0x31FF);
+	assert(cpu.R[1]==9255);
+	
+	cpu.R[6]=146;
+	//SUB R6, #145
+	cpu.executeThumb(0x3E91);
+	assert(cpu.R[6]==1);
+}
+void testThumb_f4(CPU cpu){
+	cpu.R[3]=593521;
+	cpu.R[4]=1783;
+	//EOR   R3, R4
+	cpu.executeThumb(0x4063);
+	assert(cpu.R[3]==592006);
+	
+	cpu.R[3]=593521;
+	cpu.R[4]=5;
+	//ROR   R3, R4
+	cpu.executeThumb(0x41E3);
+	assert(cpu.R[3]==0x88004873);
+	
+	cpu.R[3]=0;
+	cpu.R[4]=5;
+	//NEG R3, R4
+	cpu.executeThumb(0x4263);
+	assert(cpu.R[3]==-5);
+	
+	
+}
+void testThumb_f5(CPU cpu){
+}
+
+void testThumb(CPU cpu){
+	testThumb_f2(cpu);
+	testThumb_f3(cpu);
+	testThumb_f4(cpu);
+	
+}
 
 int main(int argc, char* argv[]){
 	loguru::init(argc, argv);
@@ -291,18 +365,18 @@ int main(int argc, char* argv[]){
 	CPU cpu;
 	string in;
 	cpu.R.CPSR.Z=1;
-	cpu.R[0]=0x0a0b0c0d;
-	cpu.ARM_MSR_REG(0,0);
 	cpu.ARM_MRS(1,0);
+	testThumb(cpu);
 	while(getline(cin,in)) {
 		//00005EE3
 		long x = stol(in, nullptr,16);
 		uint32_t instr = (uint32_t)x;
-		uint32_t in = (instr&0xff) << 24;
-		in|=(instr&0xff00) <<8;
-		in|=(instr&0xff0000) >>8;
-		in|=(instr&0xff000000) >>24;
-		cpu.execute(in);
+		//uint32_t in = (instr&0xff) << 24;
+		//in|=(instr&0xff00) <<8;
+		//in|=(instr&0xff0000) >>8;
+		//in|=(instr&0xff000000) >>24;
+		//cpu.execute(in);
+		cpu.executeThumb(instr);
 	}
 	cpu.execute(0xE3A0000A);
 	cpu.execute(0xE3A01003);
