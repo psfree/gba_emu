@@ -288,7 +288,7 @@ void CPU::trap(){
 #include <cstdlib>
 #include <assert.h>
 
-void testThumb_f2(CPU cpu){
+void testThumb_f2(CPU& cpu){
 	cpu.R[3]=-1;
 	cpu.R[4]=55;
 	cpu.R.CPSR.Z=1;
@@ -302,7 +302,7 @@ void testThumb_f2(CPU cpu){
 	cpu.executeThumb(0x1F96);
 	assert(cpu.R[6]==93);
 }
-void testThumb_f3(CPU cpu){
+void testThumb_f3(CPU& cpu){
 	cpu.R.CPSR.Z=1;
 	//MOV   R0, #128
 	cpu.executeThumb(0x2080);
@@ -327,7 +327,7 @@ void testThumb_f3(CPU cpu){
 	cpu.executeThumb(0x3E91);
 	assert(cpu.R[6]==1);
 }
-void testThumb_f4(CPU cpu){
+void testThumb_f4(CPU& cpu){
 	cpu.R[3]=593521;
 	cpu.R[4]=1783;
 	//EOR   R3, R4
@@ -359,7 +359,7 @@ void testThumb_f4(CPU cpu){
 	assert(cpu.R[3]==54);
 	
 }
-void testThumb_f5(CPU cpu){
+void testThumb_f5(CPU& cpu){
 	//hi register operation
 	cpu.R[15]=12;
 	cpu.R[5]=8;
@@ -380,14 +380,14 @@ void testThumb_f5(CPU cpu){
 
 }
 
-void testThumb_f6(CPU cpu){
+void testThumb_f6(CPU& cpu){
 	//LDR R3,[PC,#844]
 	cpu.mmu.setWord(12+844, 0x0a0b0c0d);
 	cpu.R[15]=12;
 	cpu.executeThumb(0x4BD3);
 	assert(cpu.R[3]==0x0a0b0c0d);
 }
-void testThumb_f7(CPU cpu){
+void testThumb_f7(CPU& cpu){
 	//STR   R3, [R2,R6]
 	cpu.R[2]=10;
 	cpu.R[6]=90;
@@ -400,7 +400,7 @@ void testThumb_f7(CPU cpu){
 	cpu.executeThumb(0x5DC2);
 	assert(cpu.R[2]==0xcc);
 }
-void testThumb_f8(CPU cpu){
+void testThumb_f8(CPU& cpu){
 	//STRH  R4, [R3, R0] 
 	cpu.R[3]=10;
 	cpu.R[0]=90;
@@ -416,7 +416,7 @@ void testThumb_f8(CPU cpu){
 	
 	
 }
-void testThumb_f9(CPU cpu){
+void testThumb_f9(CPU& cpu){
 	//LDR R2, [R5,#116]
 	cpu.R[5]=16;
 	cpu.mmu.setWord(132, 0xAABBCCDD);
@@ -428,7 +428,7 @@ void testThumb_f9(CPU cpu){
 	cpu.executeThumb(0x7341);
 	assert(cpu.mmu.getByte(16)==0xfe);
 }
-void testThumb_f10(CPU cpu){
+void testThumb_f10(CPU& cpu){
 	//STRH R6, [R1, #56]
 	cpu.R[1]=4;
 	cpu.R[6]=0xDDCC;
@@ -440,7 +440,7 @@ void testThumb_f10(CPU cpu){
 	assert(cpu.R[4]==0xDDCC);
 	
 }
-void testThumb_f11(CPU cpu){
+void testThumb_f11(CPU& cpu){
 	//STR   R4, [SP,#492]
 	cpu.R[13]=4;
 	cpu.R[4]=0xDEADBEEF;
@@ -448,7 +448,7 @@ void testThumb_f11(CPU cpu){
 	assert(cpu.mmu.getWord(496)==0xDEADBEEF);
 }
 
-void testThumb_f12(CPU cpu){
+void testThumb_f12(CPU& cpu){
 	//ADD   R2, PC, #572
 	cpu.R[15]=33;
 	cpu.executeThumb(0xA28F);
@@ -458,7 +458,7 @@ void testThumb_f12(CPU cpu){
 	cpu.executeThumb(0xAE35);
 	assert(cpu.R[6]==245);
 }
-void testThumb_f13(CPU cpu){
+void testThumb_f13(CPU& cpu){
 	//ADD SP, #268
 	cpu.R[13]=-4;
 	cpu.executeThumb(0xB043);
@@ -468,7 +468,7 @@ void testThumb_f13(CPU cpu){
 	cpu.executeThumb(0xB09A);
 	assert(cpu.R[13]==4);
 }
-void testThumb_f14(CPU cpu){
+void testThumb_f14(CPU& cpu){
 	//PUSH  {R0-R4,LR}
 	cpu.R[13]=100;
 	cpu.R[0]=0;
@@ -488,7 +488,7 @@ void testThumb_f14(CPU cpu){
 	assert(cpu.R[3]==3);
 	assert(cpu.R[4]==4);
 }
-void testThumb_f15(CPU cpu){
+void testThumb_f15(CPU& cpu){
 	//STMIA R0!, {R3-R7}
 	cpu.R[0]=100;
 	cpu.R[3]=3;
@@ -504,7 +504,7 @@ void testThumb_f15(CPU cpu){
 	assert(cpu.mmu.getWord(cpu.R[0]-20)==3);
 }
 
-void testThumb_f16(CPU cpu){
+void testThumb_f16(CPU& cpu){
 	cpu.R.CPSR.Z=0;
 	cpu.R.CPSR.N=1;
 	cpu.R.CPSR.V=1;
@@ -519,16 +519,18 @@ void testThumb_f16(CPU cpu){
 	cpu.executeThumb(0xDCF4);
 	assert(cpu.R[15]==0x2c6);
 }
-void testThumb_f17(CPU cpu){
+void testThumb_f17(CPU& cpu){
+	//TODO
+	return;
 }
-void testThumb_f18(CPU cpu){
+void testThumb_f18(CPU& cpu){
 }
-void testThumb_f19(CPU cpu){
+void testThumb_f19(CPU& cpu){
 }
-void testThumb_f20(CPU cpu){
+void testThumb_f20(CPU& cpu){
 }
 
-void testThumb(CPU cpu){
+void testThumb(CPU& cpu){
 	testThumb_f2(cpu);
 	testThumb_f3(cpu);
 	testThumb_f4(cpu);
@@ -544,8 +546,9 @@ void testThumb(CPU cpu){
 	testThumb_f14(cpu);
 	testThumb_f15(cpu);
 	testThumb_f16(cpu);
-	/*	testThumb_f17(cpu);
+	testThumb_f17(cpu);
 	testThumb_f18(cpu);
+	/*
 	testThumb_f19(cpu);
 	testThumb_f20(cpu);
 	*/

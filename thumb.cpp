@@ -106,7 +106,7 @@ void CPU::executeThumb(uint16_t op){
 			ARM_DataProcessing(ADD, Rd, Rd, Rs, false, false);
 		}
 		else if(subop==1){
-			ARM_DataProcessing(CMP, Rd, Rd, Rs, false, false);
+			ARM_DataProcessing(CMP, Rd, Rd, Rs, false, true);
 		}
 		else if(subop==2){
 			ARM_DataProcessing(MOV, Rd, Rd, Rs, false, false);
