@@ -226,7 +226,9 @@ void CPU::executeThumb(uint16_t op){
 		uint8_t cond = ((op>>8)&0xf);
 		//TODO: doesnt make much sense to me but it seems its lsl#1, +4 (for PC?)
 		//also signing
-		uint16_t soffset8 = (((op)&0xff)<<1) + 4;
+		uint32_t soffset8 = (((op)&0xff)<<1) + 4;
+		soffset8&=0xff;
+		if((soffset8>>7)==1) soffset8|=0xffffff00;
 		if(!condition(cond)) return;
 		ARM_BL(soffset8, false);
 	}

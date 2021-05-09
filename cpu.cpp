@@ -504,6 +504,30 @@ void testThumb_f15(CPU cpu){
 	assert(cpu.mmu.getWord(cpu.R[0]-20)==3);
 }
 
+void testThumb_f16(CPU cpu){
+	cpu.R.CPSR.Z=0;
+	cpu.R.CPSR.N=1;
+	cpu.R.CPSR.V=1;
+	cpu.R[15]=100;
+	cpu.executeThumb(0xDCFE);
+	assert(cpu.R[15]==100);
+	cpu.executeThumb(0xDC02);
+	assert(cpu.R[15]==108);
+	cpu.executeThumb(0xDCF4);
+	assert(cpu.R[15]==88);
+	cpu.R[15]=0x2da;
+	cpu.executeThumb(0xDCF4);
+	assert(cpu.R[15]==0x2c6);
+}
+void testThumb_f17(CPU cpu){
+}
+void testThumb_f18(CPU cpu){
+}
+void testThumb_f19(CPU cpu){
+}
+void testThumb_f20(CPU cpu){
+}
+
 void testThumb(CPU cpu){
 	testThumb_f2(cpu);
 	testThumb_f3(cpu);
@@ -519,6 +543,12 @@ void testThumb(CPU cpu){
 	testThumb_f13(cpu);
 	testThumb_f14(cpu);
 	testThumb_f15(cpu);
+	testThumb_f16(cpu);
+	/*	testThumb_f17(cpu);
+	testThumb_f18(cpu);
+	testThumb_f19(cpu);
+	testThumb_f20(cpu);
+	*/
 }
 
 int main(int argc, char* argv[]){

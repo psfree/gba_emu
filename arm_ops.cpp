@@ -132,11 +132,6 @@ void CPU::ARM_BL(uint32_t off, bool link){
 		R[14]=R[15]+4; //TODO: properly get PC accounting for prefetch
 		R[14]&=0xfffffffc; //clearing r14[1:0]
 	}
-	off=off<<2;
-	//sign extend
-	if(off&0x2000000){
-		off|=0xFE000000;
-	}
 	R[15]+=off;
 	swait=2;
 	nwait=1;
