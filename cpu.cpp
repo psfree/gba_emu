@@ -539,8 +539,16 @@ void testThumb_f19(CPU& cpu){
 	cpu.executeThumb(0xFFFD);
 	assert(cpu.R[15]==0x6bcffa);
 }
+void testThumb_f1(CPU& cpu){
+	//LSR   R2, R5, #27
+	cpu.R[5]=0x80000000;
+	cpu.executeThumb(0xEEA);
+	assert(cpu.R[2]==16);
+}
+
 
 void testThumb(CPU& cpu){
+	testThumb_f1(cpu);
 	testThumb_f2(cpu);
 	testThumb_f3(cpu);
 	testThumb_f4(cpu);

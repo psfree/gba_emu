@@ -18,7 +18,7 @@ void CPU::executeThumb(uint16_t op){
 		//Msr
 		//checked
 		uint8_t subop = (op&0x1800)>>11;
-		uint8_t off5 = (op&0x7C0)>>5;
+		uint8_t off5 = (op&0x7C0)>>6;
 		uint8_t Rs = (op&0x38)>>3;
 		uint8_t Rd = (op&7);
 		
