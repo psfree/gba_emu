@@ -235,11 +235,13 @@ void CPU::executeThumb(uint16_t op){
 	else if((op>>8)==0xDF){//todo: put before cond branch
 		//swi
 	}
-	else if((op>>5)==0x1c){
+	else if((op>>11)==0x1c){
 		//unconditional branch
-		uint16_t offset11 = ((op)&0x7ff);
+		uint32_t offset11 = ((op&0x7ff)<<1)+4;
+		offset11&=0x7ff;
+		if((offset11>>10)==1) offset11|=0xfffff800;
 		//BAL?
-		ARM_BL(offset11<<1, true);
+		ARM_BL(offset11, true);
 	}
 	else if((op>>8)==0xf){
 		//long link w branch

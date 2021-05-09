@@ -524,6 +524,11 @@ void testThumb_f17(CPU& cpu){
 	return;
 }
 void testThumb_f18(CPU& cpu){
+	cpu.R[15]=100;
+	cpu.executeThumb(0xE7FE);
+	assert(cpu.R[15]==100);
+	cpu.executeThumb(0xE7F2);
+	assert(cpu.R[15]==76);
 }
 void testThumb_f19(CPU& cpu){
 }
