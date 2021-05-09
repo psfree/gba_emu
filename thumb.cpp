@@ -243,7 +243,7 @@ void CPU::executeThumb(uint16_t op){
 		//BAL?
 		ARM_BL(offset11, true);
 	}
-	else if((op>>8)==0xf){
+	else if((op>>12)==0xf){
 		//long link w branch
 		bool off_low = ((op>>11)&0x1)==1;
 		uint32_t offset = ((op)&0x7ff);
