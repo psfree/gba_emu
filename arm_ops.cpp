@@ -128,6 +128,7 @@ void CPU::ARM_BX(uint8_t Rn){
 }
 
 void CPU::ARM_BL(uint32_t off, bool link){
+	//TODO: add thumb mode where link=PC+2
 	if(link){
 		R[14]=R[15]+4; //TODO: properly get PC accounting for prefetch
 		R[14]&=0xfffffffc; //clearing r14[1:0]

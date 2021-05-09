@@ -234,6 +234,7 @@ void CPU::executeThumb(uint16_t op){
 	}
 	else if((op>>8)==0xDF){//todo: put before cond branch
 		//swi
+		exception(Exception::eSVC);
 	}
 	else if((op>>11)==0x1c){
 		//unconditional branch

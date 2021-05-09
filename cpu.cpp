@@ -5,22 +5,52 @@ using namespace ALU;
 #define RESET_VECTOR 0x0
 #define UND_HANDLER 0x4
 #define SVC_HANDLER 0x8
-/*
-enum Exception {
-	RESET = 0x0,
-	UNDEFINED = 0x4,
-	SVC = 0x8,
-	ABT_PREFETCH = 0xc,
-	ABT_DATA = 0x10,
-	IRQ = 0x18,
-	FIQ = 0x1C
-};
+
 
 void CPU::exception(Exception e){
-	if(RESET) {
-		mode = CPUMode.SVC;
+	bool thumb = R.CPSR.Thumb;
+	
+	if(e==Exception::RESET) {
+		R.SPSR_svc = R.CPSR;
+		R.CPSR.mode = CPUMode::SVC;
 	}
-} */
+	else if(e==Exception::UNDEFINED){
+		R.SPSR_und = R.CPSR;
+		R.CPSR.mode = CPUMode::UND;
+		if(thumb) R[14]=R[15]+2;
+		else R[14]=R[15]+4;
+	}
+	else if(e==Exception::eSVC){
+		R.SPSR_svc = R.CPSR;
+		R.CPSR.mode = CPUMode::SVC;
+		if(thumb) R[14]=R[15]+2;
+		else R[14]=R[15]+4;
+	}
+	else if(e==Exception::ABT_PREFETCH){
+		R.SPSR_abt = R.CPSR;
+		R.CPSR.mode = CPUMode::ABT;
+		R[14]=R[15]+4;
+	}
+	else if(e==Exception::ABT_DATA){
+		R.SPSR_abt = R.CPSR;
+		R.CPSR.mode = CPUMode::ABT;
+		R[14]=R[15]+8;
+	}
+	else if(e==Exception::eIRQ){
+		R.SPSR_irq = R.CPSR;
+		R.CPSR.mode = CPUMode::IRQ;
+		R[14]=R[15]+4;
+	}
+	else if(e==Exception::eFIQ){
+		R.SPSR_fiq = R.CPSR;
+		R.CPSR.mode = CPUMode::FIQ;
+		R[14]=R[15]+4;
+	}
+	
+	//set pc to exception vector
+	R[15] = e;
+	
+}
 
 
 void CPU::clearFlags(){
@@ -520,7 +550,7 @@ void testThumb_f16(CPU& cpu){
 	assert(cpu.R[15]==0x2c6);
 }
 void testThumb_f17(CPU& cpu){
-	//TODO
+	//TODO: swi
 	return;
 }
 void testThumb_f18(CPU& cpu){
