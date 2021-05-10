@@ -15,6 +15,16 @@ enum CPUMode{
 	SYS = 0b11111
 };
 
+enum Exception {
+	RESET = 0x0,
+	UNDEFINED = 0x4,
+	eSVC = 0x8,
+	ABT_PREFETCH = 0xc,
+	ABT_DATA = 0x10,
+	eIRQ = 0x18,
+	eFIQ = 0x1C
+};
+
 enum DataOps{
 	AND,
 	EOR,
@@ -82,34 +92,6 @@ class RegisterFile {
 	unsigned int R13;//sp
 	unsigned int R14;//LR
 	unsigned int R15;//PC
-	
-	//unsigned int *CPSR=&R[16];
-	
-	
-	unsigned int *R8_fiq=&R[18];
-	unsigned int *R9_fiq=&R[19];
-	unsigned int *R10_fiq=&R[20];
-	unsigned int *R11_fiq=&R[21];
-	unsigned int *R12_fiq=&R[22];
-	unsigned int *R13_fiq=&R[23];
-	unsigned int *R14_fiq=&R[24];
-	unsigned int *spsr_fiq=&R[25];
-
-	unsigned int *R13_svc=&R[26];
-	unsigned int *R14_svc=&R[27];
-	unsigned int *sPsR_svc=&R[28];
-	
-	unsigned int *R13_abort=&R[29];
-	unsigned int *R14_abort=&R[30];
-	unsigned int *sPsR_abort=&R[31];
-	
-	unsigned int *R13_irq=&R[32];
-	unsigned int *R14_irq=&R[33];
-	unsigned int *sPsR_irq=&R[34];
-	
-	unsigned int *R13_und=&R[35];
-	unsigned int *R14_und=&R[36];
-	unsigned int *sPsR_und=&R[37];
 
 	public:
 	PSR CPSR;
@@ -121,7 +103,23 @@ class RegisterFile {
 	PSR SPSR_und;
 	
 	PSR& SPSR() {
-		return SPSR_user;
+		uint8_t mode = CPSR.mode;
+		if(mode==CPUMode::USER){
+			return SPSR_user;
+		}
+		else if(mode==CPUMode::FIQ){
+			return SPSR_fiq;
+		}
+		else if(mode==CPUMode::SVC){
+			return SPSR_svc;
+		}
+		else if(mode==CPUMode::ABT){
+			return SPSR_abt;
+		}
+		else if(mode==CPUMode::IRQ){
+			return SPSR_irq;
+		}
+		return SPSR_und;
 	}
 	
 	uint32_t& operator[](int r){
@@ -129,7 +127,7 @@ class RegisterFile {
 		if(mode==CPUMode::USER){
 			return R[r];
 		}
-		else if(mode==CPUMode::FIQ){
+		if(mode==CPUMode::FIQ){
 			if(r<8) return R[r];
 			else return R[r+10];
 		}
@@ -145,7 +143,7 @@ class RegisterFile {
 			if(r<13) return R[r];
 			else return R[r+19];
 		}
-		else if(mode==CPUMode::UND){
+		else { //CPUMode::UND
 			if(r<13) return R[r];
 			else return R[r+22];
 		}
@@ -166,6 +164,8 @@ private:
 public:
 	MMU mmu;
 	RegisterFile R;	
+	
+	void exception(Exception e);
 	
 	void clearFlags();
 	

@@ -27,7 +27,6 @@ void CPU::executeThumb(uint16_t op){
 		shiftCode|= off5<<7;
 		
 		ARM_DataProcessing(MOV, Rd, 0, shiftCode, false, true);
-		//todo:wait
 	}
 	else if((op>>13)==1){
 		//move/cmp imm
@@ -224,8 +223,7 @@ void CPU::executeThumb(uint16_t op){
 	else if((op>>12)==13){
 		//conditional branch
 		uint8_t cond = ((op>>8)&0xf);
-		//TODO: doesnt make much sense to me but it seems its lsl#1, +4 (for PC?)
-		//also signing
+		//doesnt make much sense to me, oh well
 		uint32_t soffset8 = (((op)&0xff)<<1) + 4;
 		soffset8&=0xff;
 		if((soffset8>>7)==1) soffset8|=0xffffff00;
@@ -256,5 +254,6 @@ void CPU::executeThumb(uint16_t op){
 		else R[14]=R[15]+(offset<<12);
 	}
 	
+	wait(swait, nwait,iwait);
 
 }
